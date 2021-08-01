@@ -1,5 +1,4 @@
-PACKAGES
-================================================================================
+## Packages
 - sudo
 - neovim
 - locales
@@ -19,18 +18,21 @@ PACKAGES
 - make
 - compton
 
-USER GROUPS
-================================================================================
+## User groups
+```
 usermod -aG sudo <user>
 usermod -aG audio <user>
 usermod -aG video <user>
 usermod -aG input <user>
+```
 
-LANGUAGE AND TIMEZONE
-================================================================================
+## Language and timezone
+```
 dpkg-reconfigure locales
 dpkg-reconfigure tzdata
+```
 
-DWM BUILD
-================================================================================
+## Building dwm
+```
 make XINERAMALIBS="" XINERAMAFLAGS=""
+```
