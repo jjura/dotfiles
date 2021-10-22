@@ -1,6 +1,6 @@
 ## Packages
+### System
 - sudo
-- neovim
 - locales
 - linux-image-amd64
 - systemd-sysv
@@ -12,11 +12,17 @@
 - dbus
 - alsa-utils
 - libavcodec58
-- libxft-dev
-- git
+### Programming
 - gcc
+- git
 - make
+- neovim
+### dwm
+- libxft-dev
 - compton
+### Discord
+- libxss1
+- xdg-utils
 
 ## User groups
 ```
