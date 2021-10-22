@@ -32,6 +32,12 @@ dpkg-reconfigure locales
 dpkg-reconfigure tzdata
 ```
 
+## Font configuration
+```
+dpkg-reconfigure fontconfig-config
+dpkg-reconfigure fontconfig
+```
+
 ## Building dwm
 ```
 make XINERAMALIBS="" XINERAMAFLAGS=""
