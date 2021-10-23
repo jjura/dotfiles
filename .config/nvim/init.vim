@@ -16,6 +16,7 @@ set ignorecase
 
 set termguicolors
 set background=dark
+set mouse=a
 
 let g:netrw_banner=0
 let g:netrw_winsize=-30
