@@ -3,6 +3,7 @@
 - sudo
 - locales
 - linux-image-amd64
+- firmware-amd-graphics
 - systemd-sysv
 - xserver-xorg-core
 - xserver-xorg-video-amdgpu
