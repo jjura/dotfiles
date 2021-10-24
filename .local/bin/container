@@ -1,12 +1,17 @@
 #!/bin/bash
 
-CONTAINER_MOUNT_DIRS=("/proc" "/dev" "/sys")
-CONTAINERS_DIR=/home/$SUDO_USER/Containers
-
-# Check if the script is called as root or using sudo
+# Check if the script is called as root
 if [[ $(id -u) != 0 ]]; then
-    echo "Error: The script must be run as root or with sudo!"
+    echo "Error: The script must be run as root!"
     exit
+fi
+
+CONTAINER_MOUNT_DIRS=("/proc" "/dev" "/sys")
+CONTAINERS_DIR=/root/Containers
+
+# Check if the script is called using sudo
+if [[ ! -z $SUDO_USER ]]; then
+    CONTAINERS_DIR=/home/$SUDO_USER/Containers
 fi
 
 # Create the containers directory for the calling user
