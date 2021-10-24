@@ -1,8 +1,21 @@
 #!/bin/bash
 
 CONTAINER_MOUNT_DIRS=("/proc" "/dev" "/sys")
-CONTAINERS_DIR=$HOME/Containers
+CONTAINERS_DIR=/home/$SUDO_USER/Containers
 
+# Check if the script is called as root or using sudo
+if [[ $(id -u) != 0 ]]; then
+    echo "Error: The script must be run as root or with sudo!"
+    exit
+fi
+
+# Create the containers directory for the calling user
+if [[ ! -d $CONTAINERS_DIR ]]; then
+    echo "Container: Creating containers directory: $CONTAINERS_DIR"
+    mkdir -p $CONTAINERS_DIR
+fi
+
+# Check what options is being called
 if [[ -z $1 ]]; then
     # Available options
     echo "Error: $(basename $0) [create, list, mount, umount, enter]"
@@ -14,7 +27,7 @@ elif [[ $1 == "create" ]]; then
         CONTAINER_DIR=${CONTAINERS_DIR}/$4
 
         echo "Creating container: $(basename $CONTAINER_DIR)"
-        sudo debootstrap --variant=minbase --arch=$2 $3 $CONTAINER_DIR
+        debootstrap --variant=minbase --arch=$2 $3 $CONTAINER_DIR
     fi
 elif [[ $1 == "list" ]]; then
     # Listing available containers
@@ -41,8 +54,8 @@ elif [[ $1 == "mount" ]]; then
                 if [[ $CONTAINER_MOUNT_DEST_DIR_STATUS -eq 0 ]]; then
                     echo "Skipping $CONTAINER_MOUNT_DEST_DIR since it's already mounted."
                 else
-                    sudo mount --rbind $CONTAINER_MOUNT_DIR $CONTAINER_MOUNT_DEST_DIR
-                    sudo mount --make-rslave $CONTAINER_MOUNT_DEST_DIR
+                    mount --rbind $CONTAINER_MOUNT_DIR $CONTAINER_MOUNT_DEST_DIR
+                    mount --make-rslave $CONTAINER_MOUNT_DEST_DIR
                     echo "Mounting $CONTAINER_MOUNT_DIR in $CONTAINER_MOUNT_DEST_DIR"
                 fi
             done
@@ -66,7 +79,7 @@ elif [[ $1 == "umount" ]]; then
 
                 if [[ $CONTAINER_UMOUNT_DEST_DIR_STATUS -eq 0 ]]; then
                     echo "Umounting $CONTAINER_UMOUNT_DIR in $CONTAINER_UMOUNT_DEST_DIR"
-                    sudo umount -R $CONTAINER_UMOUNT_DEST_DIR
+                    umount -R $CONTAINER_UMOUNT_DEST_DIR
                 else
                     echo "Skipping $CONTAINER_UMOUNT_DEST_DIR since it's not mounted."
                 fi
@@ -84,7 +97,7 @@ elif [[ $1 == "enter" ]]; then
         if [[ ! -d $CONTAINER_DIR ]]; then
             echo "Error: Container $(basename $CONTAINER_DIR) does not exist."
         else
-            sudo chroot $CONTAINER_DIR /bin/bash -c "su $3"
+            chroot $CONTAINER_DIR /bin/bash -c "su $3"
         fi
     fi
 elif [[ $1 == "exec" ]]; then
@@ -97,7 +110,7 @@ elif [[ $1 == "exec" ]]; then
         if [[ ! -d $CONTAINER_DIR ]]; then
             echo "Error: Container $(basename $CONTAINER_DIR) does not exist."
         else
-            sudo chroot $CONTAINER_DIR /bin/bash << EOT
+            chroot $CONTAINER_DIR /bin/bash << EOT
 su $3
 $4
 EOT
