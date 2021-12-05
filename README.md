@@ -20,10 +20,17 @@
 - neovim
 ### dwm
 - libxft-dev
-- compton
+- libxinerama-dev
+### Firefox
+- libgtk-3-0
+- libdbus-glib-1-2
 ### Discord
 - libxss1
+- libnss3
 - xdg-utils
+### Other
+- compton
+- apulse
 
 ## User groups
 ```
