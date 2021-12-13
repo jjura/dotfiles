@@ -33,12 +33,25 @@ elif [[ $1 == "create" ]]; then
 
         echo "Creating container: $(basename $CONTAINER_DIR)"
         debootstrap --variant=minbase --arch=$2 $3 $CONTAINER_DIR
+
+        echo "$(basename $CONTAINER_DIR)" > $CONTAINER_DIR/etc/debian_chroot
+        echo "TERM=xterm-256color" > $CONTAINER_DIR/etc/environment
     fi
 elif [[ $1 == "list" ]]; then
     # Listing available containers
     for CONTAINER_DIR in $CONTAINERS_DIR/*; do
         if [[ -d $CONTAINER_DIR ]]; then
-            echo "Container: $(basename $CONTAINER_DIR)"
+            for CONTAINER_MOUNT_DIR in ${CONTAINER_MOUNT_DIRS[@]}; do
+                CONTAINER_MOUNT_DEST_DIR=${CONTAINER_DIR}${CONTAINER_MOUNT_DIR}
+                mountpoint -q $CONTAINER_MOUNT_DEST_DIR
+                CONTAINER_MOUNT_DEST_DIR_STATUS=$?
+
+                if [[ ! $CONTAINER_MOUNT_DEST_DIR_STATUS -eq 0 ]]; then
+                    echo "Container: '$(basename $CONTAINER_DIR)'"
+                    break 2
+                fi
+            done
+            echo "Container: '$(basename $CONTAINER_DIR)' (mounted)"
         fi
     done
 elif [[ $1 == "mount" ]]; then
