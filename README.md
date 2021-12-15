@@ -29,6 +29,9 @@
 - libxss1
 - libnss3
 - xdg-utils
+### Teams
+- libxtst6
+- libsecret-1-0
 ### Other
 - compton
 - apulse
