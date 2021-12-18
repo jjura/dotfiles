@@ -6,6 +6,7 @@
 - linux-image-amd64
 - firmware-amd-graphics
 - firmware-iwlwifi
+- fonts-dejavu-core
 - xserver-xorg-core
 - xserver-xorg-video-amdgpu
 - xserver-xorg-input-libinput
@@ -22,9 +23,9 @@
 ### dwm
 - libxft-dev
 - libxinerama-dev
-### Firefox
+### Chrome
 - libgtk-3-0
-- libdbus-glib-1-2
+- mesa-va-drivers
 ### Discord
 - libxss1
 - libnss3
@@ -152,4 +153,13 @@ systemctl enable systemd-networkd.service
 ```
 dpkg-reconfigure fontconfig-config
 dpkg-reconfigure fontconfig
+```
+
+## Chrome configuration
+```
+Flags:
+chrome://flags/#enable-gpu-rasterization
+chrome://gpu
+
+/usr/local/lib/chrome/google-chrome --use-gl=desktop --enable-features=VaapiVideoDecoder $@
 ```
