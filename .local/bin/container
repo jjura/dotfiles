@@ -48,7 +48,7 @@ elif [[ $1 == "list" ]]; then
 
                 if [[ ! $CONTAINER_MOUNT_DEST_DIR_STATUS -eq 0 ]]; then
                     echo "Container: '$(basename $CONTAINER_DIR)'"
-                    break 2
+                    continue 2
                 fi
             done
             echo "Container: '$(basename $CONTAINER_DIR)' (mounted)"
