@@ -5,7 +5,6 @@
 - systemd-sysv
 - linux-image-amd64
 - firmware-amd-graphics
-- firmware-iwlwifi
 - fonts-dejavu-core
 - xserver-xorg-core
 - xserver-xorg-video-amdgpu
@@ -14,7 +13,7 @@
 - xinit
 - dbus
 - alsa-utils
-- libavcodec58
+- xdg-utils
 ### Programming
 - gcc
 - git
@@ -25,11 +24,9 @@
 - libxinerama-dev
 ### Chrome
 - libgtk-3-0
-- mesa-va-drivers
 ### Discord
 - libxss1
 - libnss3
-- xdg-utils
 ### Teams
 - libxtst6
 - libsecret-1-0
@@ -58,12 +55,9 @@ mkfs.ext4 /dev/nvme0n1p3
 ## Root filesystem
 ```
 mount -t ext4 /dev/nvme0n1p2 /mnt
-
 mkdir -p /mnt/{boot,home}
-
 mount -t ext4 /dev/nvme0n1p3 /mnt/home
 mount -t vfat /dev/nvme0n1p1 /mnt/boot
-
 debootstrap --variant=minbase --arch=amd64 testing /mnt
 ```
 
@@ -141,7 +135,7 @@ blkid >> /etc/fstab:
 ```
 systemctl enable systemd-networkd.service
 
-/etc/systemd/network/20-wired.conf:
+/etc/systemd/network/20-wired.network:
     [Match]
     Name=enp37s0
 
