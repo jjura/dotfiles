@@ -1,0 +1,172 @@
+#!/bin/sh
+
+LOWERS_DIR="lower"
+UPPERS_DIR="upper"
+TOOLS_DIR="tools"
+
+MOUNT_TMP_DIR="tmp"
+MOUNT_DIRS="/dev /sys /proc"
+#------------------------------------------------------------------------------#
+# Checking if called as root
+if [ $(id -u) -ne 0 ]; then
+        echo "Error: $0 must be called as a root!"
+#------------------------------------------------------------------------------#
+elif [ "$1" = "new" ]; then
+        #----------------------------------------------------------------------#
+        if [ "$2" = "lower" ]; then
+                # Checking the number of passed arguments
+                if [ $# -eq 6 ]; then
+                        LOWER_RELEASE="$4"
+                        LOWER_VARIANT="$5"
+                        LOWER_ARCH="$6"
+                        LOWER_NAME="$3-$LOWER_RELEASE-$LOWER_VARIANT-$LOWER_ARCH"
+                        LOWER_DIR="$LOWERS_DIR/$LOWER_NAME"
+
+                        # Checking if the specified lower doesn't already exist
+                        if [ ! -d $LOWER_DIR ]; then
+                                echo "Info: Creating a lower layer '$LOWER_NAME'"
+
+                                # Downloading packages for specified base
+                                DEBOOTSTRAP_DIR=$TOOLS_DIR $TOOLS_DIR/debootstrap \
+                                        --variant=$LOWER_VARIANT \
+                                        --arch=$LOWER_ARCH \
+                                        $LOWER_RELEASE $LOWER_DIR
+                        else
+                                echo "Error: Specified lower '$LOWER_NAME' already exists!"
+                        fi
+                else
+                        echo "Error: $0 new lower <name> <release> <variant> <arch>"
+                fi
+        #----------------------------------------------------------------------#
+        elif [ "$2" = "upper" ]; then
+                # Checking the number of passed arguments
+                if [ $# -eq 3 ]; then
+                        UPPER_NAME="$3"
+                        UPPER_DIR="$UPPERS_DIR/$UPPER_NAME"
+
+                        # Checking if the specified upper doesn't already exist
+                        if [ ! -d $UPPER_DIR ]; then
+                                UPPER_FILE_CHROOT="$UPPER_DIR/etc/debian_chroot"
+
+                                mkdir -p $(dirname $UPPER_FILE_CHROOT)
+                                echo "$UPPER_NAME" > $UPPER_FILE_CHROOT
+                                echo "Info: Creating an upper layer '$UPPER_NAME'"
+                        else
+                                echo "Error: Specified upper '$UPPER_NAME' already exists!"
+                        fi
+                else
+                        echo "Error: $0 new upper <name>"
+                fi
+        #----------------------------------------------------------------------#
+        else
+                echo "Error: $0 new <upper, lower>"
+        fi
+#------------------------------------------------------------------------------#
+elif [ "$1" = "mount" ]; then
+        # Checking the number of passed arguments
+        if [ $# -eq 3 ]; then
+                LOWER_NAME="$2"
+                LOWER_DIR="$LOWERS_DIR/$LOWER_NAME"
+                UPPER_NAME="$3"
+                UPPER_DIR="$UPPERS_DIR/$UPPER_NAME"
+
+                # Checking the existence of lower and upper directory
+                if [ ! -d $LOWER_DIR ] || [ ! -d $UPPER_DIR ]; then
+                        echo "Error: Specified upper or lower doesn't exist!"
+                else
+                        UPPER_MOUNT_DIR="$MOUNT_TMP_DIR/$UPPER_NAME"
+                        mountpoint -q $UPPER_MOUNT_DIR
+
+                        # Checking if the mount directory isn't mounted
+                        if [ ! $? -eq 0 ]; then
+                                WORKS_DIR="$MOUNT_TMP_DIR/.containerctl"
+
+                                # Check if the mount directory exists
+                                if [ ! -d $UPPER_MOUNT_DIR ]; then
+                                        mkdir -p $UPPER_MOUNT_DIR
+                                fi
+
+                                # Check if the work directory exists
+                                if [ ! -d $WORKS_DIR ]; then
+                                        mkdir -p $WORKS_DIR
+                                fi
+
+                                mount -t overlay overlay -o lowerdir=$LOWER_DIR,upperdir=$UPPER_DIR,workdir=$WORKS_DIR $UPPER_MOUNT_DIR
+
+                                for MOUNT_DIR in $MOUNT_DIRS; do
+                                        echo "Mounting $MOUNT_DIR in ${UPPER_MOUNT_DIR}${MOUNT_DIR}"
+
+                                        mount --rbind $MOUNT_DIR ${UPPER_MOUNT_DIR}${MOUNT_DIR}
+                                        mount --make-rslave ${UPPER_MOUNT_DIR}${MOUNT_DIR}
+                                done
+                        else
+                                echo "Error: The mount directory '$UPPER_MOUNT_DIR' is already mounted!"
+                        fi
+                fi
+        else
+                echo "Error: $0 mount <lower> <upper>"
+        fi
+#------------------------------------------------------------------------------#
+elif [ "$1" = "umount" ]; then
+        # Checking the number of passed arguments
+        if [ $# -eq 2 ]; then
+                UPPER_NAME="$2"
+
+                # Checking the existance of upper directory
+                if [ -d $UPPERS_DIR/$UPPER_NAME ]; then
+                        UPPER_MOUNT_DIR="$MOUNT_TMP_DIR/$UPPER_NAME"
+
+                        # Checking if the mount directory is mounted
+                        mountpoint -q $UPPER_MOUNT_DIR
+
+                        if [ $? -eq 0 ]; then
+                                for MOUNT_DIR in $MOUNT_DIRS; do
+                                        echo "Unmounting $MOUNT_DIR in ${UPPER_MOUNT_DIR}${MOUNT_DIR}"
+                                        umount -R ${UPPER_MOUNT_DIR}${MOUNT_DIR}
+                                done
+                                umount -R $UPPER_MOUNT_DIR
+                        else
+                                echo "Error: The specified upper '$UPPER_NAME' isn't mounted!"
+                        fi
+                else
+                        echo "Error: The specified upper '$UPPER_NAME' doesn't exist!"
+                fi
+        else
+                echo "Error: $0 umount <upper>"
+        fi
+#------------------------------------------------------------------------------#
+elif [ "$1" = "enter" ]; then
+        # Specifying the entry user
+        if [ ! -z $3 ]; then
+                USER=$3;
+        else
+                USER="root"
+        fi
+
+        # Checking the number of passed arguments
+        if [ $# -eq 2 ] || [ $# -eq 3 ]; then
+                UPPER_NAME="$2"
+
+                # Checking the existance of upper directory
+                if [ -d $UPPERS_DIR/$UPPER_NAME ]; then
+                        UPPER_MOUNT_DIR="$MOUNT_TMP_DIR/$UPPER_NAME"
+
+                        # Checking if the mount directory is mounted
+                        mountpoint -q $UPPER_MOUNT_DIR
+
+                        if [ $? -eq 0 ]; then
+                                chroot $UPPER_MOUNT_DIR /bin/bash -c "su $USER"
+                        else
+                                echo "Error: The specified upper '$UPPER_NAME' isn't mounted!"
+                        fi
+                else
+                        echo "Error: The specified upper '$UPPER_NAME' doesn't exist!"
+                fi
+        else
+                echo "Error: $0 enter <mounted> [user=root]"
+        fi
+#------------------------------------------------------------------------------#
+else
+        echo "$0 <new, mount, umount, enter>"
+#------------------------------------------------------------------------------#
+fi
