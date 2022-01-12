@@ -22,6 +22,11 @@ elif [ "$1" = "new" ]; then
                         LOWER_NAME="$3-$LOWER_RELEASE-$LOWER_VARIANT-$LOWER_ARCH"
                         LOWER_DIR="$LOWERS_DIR/$LOWER_NAME"
 
+                        # Checking if the lowers dir exist
+                        if [ ! -d $LOWERS_DIR ]; then
+                                mkdir -p $LOWERS_DIR
+                        fi
+
                         # Checking if the specified lower doesn't already exist
                         if [ ! -d $LOWER_DIR ]; then
                                 echo "Info: Creating a lower layer '$LOWER_NAME'"
@@ -43,6 +48,11 @@ elif [ "$1" = "new" ]; then
                 if [ $# -eq 3 ]; then
                         UPPER_NAME="$3"
                         UPPER_DIR="$UPPERS_DIR/$UPPER_NAME"
+
+                        # Checking if the uppers dir exist
+                        if [ ! -d $UPPERS_DIR ]; then
+                                mkdir -p $UPPERS_DIR
+                        fi
 
                         # Checking if the specified upper doesn't already exist
                         if [ ! -d $UPPER_DIR ]; then
