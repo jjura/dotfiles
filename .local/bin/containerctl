@@ -1,15 +1,16 @@
 #!/bin/sh
 
-LOWERS_DIR="lower"
-UPPERS_DIR="upper"
-TOOLS_DIR="tools"
+BASE_DIR="/home/$SUDO_USER/Containers"
+BASE_LOWER_DIR="$BASE_DIR/lower"
+BASE_UPPER_DIR="$BASE_DIR/upper"
+BASE_MOUNT_DIR="$BASE_DIR/.containerctl"
+BASE_TOOLS_DIR="$(dirname $0)/tools"
 
-MOUNT_TMP_DIR="tmp"
 MOUNT_DIRS="/dev /sys /proc"
+
 #------------------------------------------------------------------------------#
-# Checking if called as root
-if [ $(id -u) -ne 0 ]; then
-        echo "Error: $0 must be called as a root!"
+if [ $(id -u) -ne 0 ] || [ -z $SUDO_USER ]; then
+        echo "Error: This program must be run using sudo!"
 #------------------------------------------------------------------------------#
 elif [ "$1" = "new" ]; then
         #----------------------------------------------------------------------#
@@ -20,11 +21,11 @@ elif [ "$1" = "new" ]; then
                         LOWER_VARIANT="$5"
                         LOWER_ARCH="$6"
                         LOWER_NAME="$3-$LOWER_RELEASE-$LOWER_VARIANT-$LOWER_ARCH"
-                        LOWER_DIR="$LOWERS_DIR/$LOWER_NAME"
+                        LOWER_DIR="$BASE_LOWER_DIR/$LOWER_NAME"
 
                         # Checking if the lowers dir exist
-                        if [ ! -d $LOWERS_DIR ]; then
-                                mkdir -p $LOWERS_DIR
+                        if [ ! -d $BASE_LOWER_DIR ]; then
+                                mkdir -p $BASE_LOWER_DIR
                         fi
 
                         # Checking if the specified lower doesn't already exist
@@ -32,7 +33,7 @@ elif [ "$1" = "new" ]; then
                                 echo "Info: Creating a lower layer '$LOWER_NAME'"
 
                                 # Downloading packages for specified base
-                                DEBOOTSTRAP_DIR=$TOOLS_DIR $TOOLS_DIR/debootstrap \
+                                DEBOOTSTRAP_DIR=$BASE_TOOLS_DIR $BASE_TOOLS_DIR/debootstrap \
                                         --variant=$LOWER_VARIANT \
                                         --arch=$LOWER_ARCH \
                                         $LOWER_RELEASE $LOWER_DIR
@@ -47,11 +48,11 @@ elif [ "$1" = "new" ]; then
                 # Checking the number of passed arguments
                 if [ $# -eq 3 ]; then
                         UPPER_NAME="$3"
-                        UPPER_DIR="$UPPERS_DIR/$UPPER_NAME"
+                        UPPER_DIR="$BASE_UPPER_DIR/$UPPER_NAME"
 
                         # Checking if the uppers dir exist
-                        if [ ! -d $UPPERS_DIR ]; then
-                                mkdir -p $UPPERS_DIR
+                        if [ ! -d $BASE_UPPER_DIR ]; then
+                                mkdir -p $BASE_UPPER_DIR
                         fi
 
                         # Checking if the specified upper doesn't already exist
@@ -76,20 +77,20 @@ elif [ "$1" = "mount" ]; then
         # Checking the number of passed arguments
         if [ $# -eq 3 ]; then
                 LOWER_NAME="$2"
-                LOWER_DIR="$LOWERS_DIR/$LOWER_NAME"
+                LOWER_DIR="$BASE_LOWER_DIR/$LOWER_NAME"
                 UPPER_NAME="$3"
-                UPPER_DIR="$UPPERS_DIR/$UPPER_NAME"
+                UPPER_DIR="$BASE_UPPER_DIR/$UPPER_NAME"
 
                 # Checking the existence of lower and upper directory
                 if [ ! -d $LOWER_DIR ] || [ ! -d $UPPER_DIR ]; then
                         echo "Error: Specified upper or lower doesn't exist!"
                 else
-                        UPPER_MOUNT_DIR="$MOUNT_TMP_DIR/$UPPER_NAME"
+                        UPPER_MOUNT_DIR="$BASE_MOUNT_DIR/$UPPER_NAME"
                         mountpoint -q $UPPER_MOUNT_DIR
 
                         # Checking if the mount directory isn't mounted
                         if [ ! $? -eq 0 ]; then
-                                WORKS_DIR="$MOUNT_TMP_DIR/.containerctl"
+                                WORKS_DIR="$BASE_MOUNT_DIR/.tmp"
 
                                 # Check if the mount directory exists
                                 if [ ! -d $UPPER_MOUNT_DIR ]; then
@@ -123,8 +124,8 @@ elif [ "$1" = "umount" ]; then
                 UPPER_NAME="$2"
 
                 # Checking the existance of upper directory
-                if [ -d $UPPERS_DIR/$UPPER_NAME ]; then
-                        UPPER_MOUNT_DIR="$MOUNT_TMP_DIR/$UPPER_NAME"
+                if [ -d $BASE_UPPER_DIR/$UPPER_NAME ]; then
+                        UPPER_MOUNT_DIR="$BASE_MOUNT_DIR/$UPPER_NAME"
 
                         # Checking if the mount directory is mounted
                         mountpoint -q $UPPER_MOUNT_DIR
@@ -158,8 +159,8 @@ elif [ "$1" = "enter" ]; then
                 UPPER_NAME="$2"
 
                 # Checking the existance of upper directory
-                if [ -d $UPPERS_DIR/$UPPER_NAME ]; then
-                        UPPER_MOUNT_DIR="$MOUNT_TMP_DIR/$UPPER_NAME"
+                if [ -d $BASE_UPPER_DIR/$UPPER_NAME ]; then
+                        UPPER_MOUNT_DIR="$BASE_MOUNT_DIR/$UPPER_NAME"
 
                         # Checking if the mount directory is mounted
                         mountpoint -q $UPPER_MOUNT_DIR
