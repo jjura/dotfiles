@@ -12,6 +12,30 @@ MOUNT_DIRS="/dev /sys /proc"
 if [ $(id -u) -ne 0 ] || [ -z $SUDO_USER ]; then
         echo "Error: This program must be run using sudo!"
 #------------------------------------------------------------------------------#
+elif [ "$1" = "list" ]; then
+        # Printing the upper container layers
+        echo "+---------------------------------------------------------------+"
+        echo "| UPPER                                                         |"
+        echo "+---------------------------------------------------------------+"
+        DIRS=$(find $BASE_UPPER_DIR -mindepth 1 -maxdepth 1 -type d)
+        for DIR in $DIRS; do
+                mountpoint -q $BASE_MOUNT_DIR/$(basename $DIR)
+
+                if [ $? -eq 0 ]; then
+                        echo "- $(basename $DIR) (mounted)"
+                else
+                        echo "- $(basename $DIR)"
+                fi
+        done
+        # Printing the lower container layers
+        echo "+---------------------------------------------------------------+"
+        echo "| LOWER                                                         |"
+        echo "+---------------------------------------------------------------+"
+        DIRS=$(find $BASE_LOWER_DIR -mindepth 1 -maxdepth 1 -type d)
+        for DIR in $DIRS; do
+                echo "- $(basename $DIR)"
+        done
+#------------------------------------------------------------------------------#
 elif [ "$1" = "new" ]; then
         #----------------------------------------------------------------------#
         if [ "$2" = "lower" ]; then
@@ -92,24 +116,29 @@ elif [ "$1" = "mount" ]; then
                         if [ ! $? -eq 0 ]; then
                                 WORKS_DIR="$BASE_MOUNT_DIR/.tmp"
 
-                                # Check if the mount directory exists
+                                # Checking if the mount directory exists
                                 if [ ! -d $UPPER_MOUNT_DIR ]; then
                                         mkdir -p $UPPER_MOUNT_DIR
                                 fi
 
-                                # Check if the work directory exists
+                                # Checking if the work directory exists
                                 if [ ! -d $WORKS_DIR ]; then
                                         mkdir -p $WORKS_DIR
                                 fi
 
+                                # Constructing the rootfs using the overlay
                                 mount -t overlay overlay -o lowerdir=$LOWER_DIR,upperdir=$UPPER_DIR,workdir=$WORKS_DIR $UPPER_MOUNT_DIR
 
+                                # Mounting the host resources
                                 for MOUNT_DIR in $MOUNT_DIRS; do
                                         echo "Mounting $MOUNT_DIR in ${UPPER_MOUNT_DIR}${MOUNT_DIR}"
 
                                         mount --rbind $MOUNT_DIR ${UPPER_MOUNT_DIR}${MOUNT_DIR}
                                         mount --make-rslave ${UPPER_MOUNT_DIR}${MOUNT_DIR}
                                 done
+
+                                # Enabling the access to the X11 server
+                                xhost +local:
                         else
                                 echo "Error: The mount directory '$UPPER_MOUNT_DIR' is already mounted!"
                         fi
@@ -131,11 +160,17 @@ elif [ "$1" = "umount" ]; then
                         mountpoint -q $UPPER_MOUNT_DIR
 
                         if [ $? -eq 0 ]; then
+                                # Unmounting the host resources
                                 for MOUNT_DIR in $MOUNT_DIRS; do
                                         echo "Unmounting $MOUNT_DIR in ${UPPER_MOUNT_DIR}${MOUNT_DIR}"
                                         umount -R ${UPPER_MOUNT_DIR}${MOUNT_DIR}
                                 done
+
+                                # Unmounting the overlay rootfs
                                 umount -R $UPPER_MOUNT_DIR
+
+                                # Disabling the access to the X11 server
+                                xhost -local:
                         else
                                 echo "Error: The specified upper '$UPPER_NAME' isn't mounted!"
                         fi
