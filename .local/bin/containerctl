@@ -1,12 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 BASE_DIR="/home/$SUDO_USER/Containers"
 BASE_LOWER_DIR="$BASE_DIR/lower"
 BASE_UPPER_DIR="$BASE_DIR/upper"
 BASE_MOUNT_DIR="$BASE_DIR/.containerctl"
 BASE_TOOLS_DIR="$(dirname $0)/tools"
-
-MOUNT_DIRS="/dev /sys /proc"
+BASE_PACKAGES="systemd,dbus,sudo"
 
 #------------------------------------------------------------------------------#
 if [ $(id -u) -ne 0 ] || [ -z $SUDO_USER ]; then
@@ -17,7 +16,7 @@ elif [ "$1" = "list" ]; then
         echo "+---------------------------------------------------------------+"
         echo "| UPPER                                                         |"
         echo "+---------------------------------------------------------------+"
-        DIRS=$(find $BASE_UPPER_DIR -mindepth 1 -maxdepth 1 -type d)
+        DIRS=$(find $BASE_UPPER_DIR -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
         for DIR in $DIRS; do
                 mountpoint -q $BASE_MOUNT_DIR/$(basename $DIR)
 
@@ -31,20 +30,18 @@ elif [ "$1" = "list" ]; then
         echo "+---------------------------------------------------------------+"
         echo "| LOWER                                                         |"
         echo "+---------------------------------------------------------------+"
-        DIRS=$(find $BASE_LOWER_DIR -mindepth 1 -maxdepth 1 -type d)
+        DIRS=$(find $BASE_LOWER_DIR -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
         for DIR in $DIRS; do
                 echo "- $(basename $DIR)"
         done
 #------------------------------------------------------------------------------#
-elif [ "$1" = "new" ]; then
+elif [ "$1" = "create" ]; then
         #----------------------------------------------------------------------#
         if [ "$2" = "lower" ]; then
                 # Checking the number of passed arguments
-                if [ $# -eq 6 ]; then
+                if [ $# -eq 4 ]; then
                         LOWER_RELEASE="$4"
-                        LOWER_VARIANT="$5"
-                        LOWER_ARCH="$6"
-                        LOWER_NAME="$3-$LOWER_RELEASE-$LOWER_VARIANT-$LOWER_ARCH"
+                        LOWER_NAME="$3-$LOWER_RELEASE"
                         LOWER_DIR="$BASE_LOWER_DIR/$LOWER_NAME"
 
                         # Checking if the lowers dir exist
@@ -58,14 +55,23 @@ elif [ "$1" = "new" ]; then
 
                                 # Downloading packages for specified base
                                 DEBOOTSTRAP_DIR=$BASE_TOOLS_DIR $BASE_TOOLS_DIR/debootstrap \
-                                        --variant=$LOWER_VARIANT \
-                                        --arch=$LOWER_ARCH \
+                                        --include=$BASE_PACKAGES \
+                                        --variant="minbase" \
+                                        --arch="amd64" \
                                         $LOWER_RELEASE $LOWER_DIR
+
+                                # Configuring the lower layer environment
+                                echo -e "127.0.0.1 localhost\n127.0.0.1 $(hostname)" > \
+                                        $LOWER_DIR/etc/hosts
+                                echo -e "export DISPLAY=:0\nexport TERM=xterm-256color" > \
+                                        $LOWER_DIR/etc/environment
+                                echo -e "[Match]\nName=host0\n[Network]\nDHCP=y" > \
+                                        $LOWER_DIR/etc/systemd/network/20-wired.network
                         else
                                 echo "Error: Specified lower '$LOWER_NAME' already exists!"
                         fi
                 else
-                        echo "Error: $0 new lower <name> <release> <variant> <arch>"
+                        echo "Error: $0 create lower <name> <release>"
                 fi
         #----------------------------------------------------------------------#
         elif [ "$2" = "upper" ]; then
@@ -81,20 +87,22 @@ elif [ "$1" = "new" ]; then
 
                         # Checking if the specified upper doesn't already exist
                         if [ ! -d $UPPER_DIR ]; then
-                                UPPER_FILE_CHROOT="$UPPER_DIR/etc/debian_chroot"
+                                # Configuring the upper layer identity
+                                UPPER_CHROOT_FILE="$UPPER_DIR/etc/debian_chroot"
 
-                                mkdir -p $(dirname $UPPER_FILE_CHROOT)
-                                echo "$UPPER_NAME" > $UPPER_FILE_CHROOT
+                                mkdir -p $(dirname $UPPER_CHROOT_FILE)
+                                echo $UPPER_NAME > $UPPER_CHROOT_FILE
+
                                 echo "Info: Creating an upper layer '$UPPER_NAME'"
                         else
                                 echo "Error: Specified upper '$UPPER_NAME' already exists!"
                         fi
                 else
-                        echo "Error: $0 new upper <name>"
+                        echo "Error: $0 create upper <name>"
                 fi
         #----------------------------------------------------------------------#
         else
-                echo "Error: $0 new <upper, lower>"
+                echo "Error: $0 create <upper, lower>"
         fi
 #------------------------------------------------------------------------------#
 elif [ "$1" = "mount" ]; then
@@ -129,14 +137,6 @@ elif [ "$1" = "mount" ]; then
                                 # Constructing the rootfs using the overlay
                                 mount -t overlay overlay -o lowerdir=$LOWER_DIR,upperdir=$UPPER_DIR,workdir=$WORKS_DIR $UPPER_MOUNT_DIR
 
-                                # Mounting the host resources
-                                for MOUNT_DIR in $MOUNT_DIRS; do
-                                        echo "Mounting $MOUNT_DIR in ${UPPER_MOUNT_DIR}${MOUNT_DIR}"
-
-                                        mount --rbind $MOUNT_DIR ${UPPER_MOUNT_DIR}${MOUNT_DIR}
-                                        mount --make-rslave ${UPPER_MOUNT_DIR}${MOUNT_DIR}
-                                done
-
                                 # Enabling the access to the X11 server
                                 xhost +local:
                         else
@@ -160,12 +160,6 @@ elif [ "$1" = "umount" ]; then
                         mountpoint -q $UPPER_MOUNT_DIR
 
                         if [ $? -eq 0 ]; then
-                                # Unmounting the host resources
-                                for MOUNT_DIR in $MOUNT_DIRS; do
-                                        echo "Unmounting $MOUNT_DIR in ${UPPER_MOUNT_DIR}${MOUNT_DIR}"
-                                        umount -R ${UPPER_MOUNT_DIR}${MOUNT_DIR}
-                                done
-
                                 # Unmounting the overlay rootfs
                                 umount -R $UPPER_MOUNT_DIR
 
@@ -201,7 +195,14 @@ elif [ "$1" = "enter" ]; then
                         mountpoint -q $UPPER_MOUNT_DIR
 
                         if [ $? -eq 0 ]; then
-                                chroot $UPPER_MOUNT_DIR /bin/bash -c "su $USER"
+                                systemd-nspawn \
+                                        --boot \
+                                        --network-veth \
+                                        --property=DeviceAllow="char-alsa" \
+                                        --bind-ro /dev/snd \
+                                        --bind-ro /dev/dri \
+                                        --bind-ro /tmp/.X11-unix \
+                                        --directory $UPPER_MOUNT_DIR
                         else
                                 echo "Error: The specified upper '$UPPER_NAME' isn't mounted!"
                         fi
@@ -213,6 +214,6 @@ elif [ "$1" = "enter" ]; then
         fi
 #------------------------------------------------------------------------------#
 else
-        echo "$0 <new, mount, umount, enter>"
+        echo "$0 <list, create, mount, umount, enter>"
 #------------------------------------------------------------------------------#
 fi
