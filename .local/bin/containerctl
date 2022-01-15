@@ -65,6 +65,8 @@ elif [ "$1" = "create" ]; then
                                         $LOWER_DIR/etc/hosts
                                 echo -e "export DISPLAY=:0\nexport TERM=xterm-256color" > \
                                         $LOWER_DIR/etc/environment
+                                echo -e "defaults.pcm.card 0\ndefaults.pcm.device 1" > \
+                                        $LOWER_DIR/etc/asound.conf
                                 echo -e "[Match]\nName=host0\n[Network]\nDHCP=y" > \
                                         $LOWER_DIR/etc/systemd/network/20-wired.network
                         else
@@ -198,10 +200,10 @@ elif [ "$1" = "enter" ]; then
                                 systemd-nspawn \
                                         --boot \
                                         --network-veth \
-                                        --property=DeviceAllow="char-alsa" \
-                                        --bind-ro /dev/snd \
-                                        --bind-ro /dev/dri \
-                                        --bind-ro /tmp/.X11-unix \
+                                        --bind /dev/dri \
+                                        --bind /dev/snd \
+                                        --property=DeviceAllow="char-alsa rwm" \
+                                        --bind-ro /tmp/.X11-unix/X0 \
                                         --directory $UPPER_MOUNT_DIR
                         else
                                 echo "Error: The specified upper '$UPPER_NAME' isn't mounted!"
