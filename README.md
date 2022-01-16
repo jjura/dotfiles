@@ -24,6 +24,7 @@
 - libxinerama-dev
 ### Chrome
 - libgtk-3-0
+- libx11-xcb1
 ### Discord
 - libxss1
 - libnss3

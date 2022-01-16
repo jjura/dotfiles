@@ -1,214 +1,275 @@
 #!/bin/bash
 
-BASE_DIR="/home/$SUDO_USER/Containers"
-BASE_LOWER_DIR="$BASE_DIR/lower"
-BASE_UPPER_DIR="$BASE_DIR/upper"
-BASE_MOUNT_DIR="$BASE_DIR/.containerctl"
-BASE_TOOLS_DIR="$(dirname $0)/tools"
-BASE_PACKAGES="systemd,dbus,sudo"
+#-------------------------------------------------------------------------------
+# Init
+#-------------------------------------------------------------------------------
+APP_DIR="/home/$SUDO_USER/Containers"
+APP_TMP_DIR="$APP_DIR/.tmp"
 
-#------------------------------------------------------------------------------#
-if [ $(id -u) -ne 0 ] || [ -z $SUDO_USER ]; then
-        echo "Error: This program must be run using sudo!"
-#------------------------------------------------------------------------------#
-elif [ "$1" = "list" ]; then
-        # Printing the upper container layers
-        echo "+---------------------------------------------------------------+"
-        echo "| UPPER                                                         |"
-        echo "+---------------------------------------------------------------+"
-        DIRS=$(find $BASE_UPPER_DIR -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
-        for DIR in $DIRS; do
-                mountpoint -q $BASE_MOUNT_DIR/$(basename $DIR)
+# Check if script is called as a sudo user.
+if [ -z $SUDO_USER ]; then
+        echo "Error: $(basename $0) must be called as a sudo user!"
+        exit
+fi
 
-                if [ $? -eq 0 ]; then
-                        echo "- $(basename $DIR) (mounted)"
-                else
-                        echo "- $(basename $DIR)"
-                fi
-        done
-        # Printing the lower container layers
-        echo "+---------------------------------------------------------------+"
-        echo "| LOWER                                                         |"
-        echo "+---------------------------------------------------------------+"
-        DIRS=$(find $BASE_LOWER_DIR -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
-        for DIR in $DIRS; do
-                echo "- $(basename $DIR)"
-        done
-#------------------------------------------------------------------------------#
-elif [ "$1" = "create" ]; then
-        #----------------------------------------------------------------------#
-        if [ "$2" = "lower" ]; then
-                # Checking the number of passed arguments
-                if [ $# -eq 4 ]; then
-                        LOWER_RELEASE="$4"
-                        LOWER_NAME="$3-$LOWER_RELEASE"
-                        LOWER_DIR="$BASE_LOWER_DIR/$LOWER_NAME"
+# Check if the container directory exists.
+if [ ! -d $APP_DIR ]; then
+        echo "Error: The specified directory '$APP_DIR' doesn't exist!"
+        exit
+fi
 
-                        # Checking if the lowers dir exist
-                        if [ ! -d $BASE_LOWER_DIR ]; then
-                                mkdir -p $BASE_LOWER_DIR
-                        fi
+#-------------------------------------------------------------------------------
+# Debootstrap
+#-------------------------------------------------------------------------------
+DEBOOTSTRAP_URL="http://deb.debian.org/debian/pool/main/d/debootstrap/debootstrap_1.0.123.tar.gz"
+DEBOOTSTRAP_DIR="$APP_DIR/debootstrap"
+DEBOOTSTRAP_ARCHIVE="$APP_DIR/$(basename $DEBOOTSTRAP_URL)"
 
-                        # Checking if the specified lower doesn't already exist
-                        if [ ! -d $LOWER_DIR ]; then
-                                echo "Info: Creating a lower layer '$LOWER_NAME'"
-
-                                # Downloading packages for specified base
-                                DEBOOTSTRAP_DIR=$BASE_TOOLS_DIR $BASE_TOOLS_DIR/debootstrap \
-                                        --include=$BASE_PACKAGES \
-                                        --variant="minbase" \
-                                        --arch="amd64" \
-                                        $LOWER_RELEASE $LOWER_DIR
-
-                                # Configuring the lower layer environment
-                                echo -e "127.0.0.1 localhost\n127.0.0.1 $(hostname)" > \
-                                        $LOWER_DIR/etc/hosts
-                                echo -e "export DISPLAY=:0\nexport TERM=xterm-256color" > \
-                                        $LOWER_DIR/etc/environment
-                                echo -e "defaults.pcm.card 0\ndefaults.pcm.device 1" > \
-                                        $LOWER_DIR/etc/asound.conf
-                                echo -e "[Match]\nName=host0\n[Network]\nDHCP=y" > \
-                                        $LOWER_DIR/etc/systemd/network/20-wired.network
-                        else
-                                echo "Error: Specified lower '$LOWER_NAME' already exists!"
-                        fi
-                else
-                        echo "Error: $0 create lower <name> <release>"
-                fi
-        #----------------------------------------------------------------------#
-        elif [ "$2" = "upper" ]; then
-                # Checking the number of passed arguments
-                if [ $# -eq 3 ]; then
-                        UPPER_NAME="$3"
-                        UPPER_DIR="$BASE_UPPER_DIR/$UPPER_NAME"
-
-                        # Checking if the uppers dir exist
-                        if [ ! -d $BASE_UPPER_DIR ]; then
-                                mkdir -p $BASE_UPPER_DIR
-                        fi
-
-                        # Checking if the specified upper doesn't already exist
-                        if [ ! -d $UPPER_DIR ]; then
-                                # Configuring the upper layer identity
-                                UPPER_CHROOT_FILE="$UPPER_DIR/etc/debian_chroot"
-
-                                mkdir -p $(dirname $UPPER_CHROOT_FILE)
-                                echo $UPPER_NAME > $UPPER_CHROOT_FILE
-
-                                echo "Info: Creating an upper layer '$UPPER_NAME'"
-                        else
-                                echo "Error: Specified upper '$UPPER_NAME' already exists!"
-                        fi
-                else
-                        echo "Error: $0 create upper <name>"
-                fi
-        #----------------------------------------------------------------------#
-        else
-                echo "Error: $0 create <upper, lower>"
+# Check if the debootstrap is already prepared.
+if [ ! -d $DEBOOTSTRAP_DIR ]; then
+        # Download debootstrap archive.
+        if [ ! -f $DEBOOTSTRAP_ARCHIVE ]; then
+                wget --quiet $DEBOOTSTRAP_URL -O $DEBOOTSTRAP_ARCHIVE
         fi
-#------------------------------------------------------------------------------#
+
+        # Extract debootstrap.
+        if [ -f $DEBOOTSTRA_ARCHIVE ]; then
+                tar xf $DEBOOTSTRAP_ARCHIVE -C $APP_DIR
+                rm $DEBOOTSTRAP_ARCHIVE
+        fi
+fi
+
+#-------------------------------------------------------------------------------
+# Base
+#-------------------------------------------------------------------------------
+BASE_ARCH="amd64"
+BASE_VARIANT="minbase"
+BASE_RELEASE="testing"
+BASE_PACKAGES="systemd-sysv,dbus"
+BASE_DIR="$APP_DIR/$BASE_RELEASE-$BASE_VARIANT-$BASE_ARCH"
+
+# Check if the base is already downloaded.
+if [ ! -d $BASE_DIR ]; then
+        # Download the base.
+        DEBOOTSTRAP_DIR=$DEBOOTSTRAP_DIR $DEBOOTSTRAP_DIR/debootstrap \
+                --include $BASE_PACKAGES \
+                --variant $BASE_VARIANT \
+                --arch $BASE_ARCH \
+                $BASE_RELEASE $BASE_DIR
+fi
+
+#-------------------------------------------------------------------------------
+# Command: create <container>
+#-------------------------------------------------------------------------------
+if [ "$1" = "create" ]; then
+        # Check the number of passed arguments.
+        if [ $# -ne 2 ]; then
+                echo "Error: $(basename $0) create <container>"
+                exit
+        fi
+
+        CONTAINER_NAME="$2"
+        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
+
+        # Check if the container directory exists.
+        if [ -d $CONTAINER_DIR ]; then
+                echo "Error: Container '$CONTAINER_NAME' already exists!"
+                exit
+        fi
+
+        # Create container configuration directory.
+        mkdir -p $CONTAINER_DIR/etc/systemd/network
+
+        # Configure the hostname.
+        echo -e "127.0.0.1 localhost\n127.0.0.1 $CONTAINER_NAME" \
+                > $CONTAINER_DIR/etc/hosts
+
+        echo -e "$CONTAINER_NAME" \
+                > $CONTAINER_DIR/etc/hostname
+
+        # Configure the environment variables.
+        echo -e "export DISPLAY=:0\nexport TERM=xterm-256color" \
+                > $CONTAINER_DIR/etc/environment
+
+        # Configure the selected audio card and device.
+        echo -e "defaults.pcm.card 0\ndefaults.pcm.device 1" \
+                > $CONTAINER_DIR/etc/asound.conf
+
+        # Configure the host0 virtual network card.
+        echo -e "[Match]\nName=host0\n[Network]\nDHCP=yes" \
+                > $CONTAINER_DIR/etc/systemd/network/20-wired.network
+
+        # Notify user about successful creation.
+        echo "Info: Container '$CONTAINER_NAME' created."
+
+#-------------------------------------------------------------------------------
+# Command: remove <container>
+#-------------------------------------------------------------------------------
+elif [ "$1" = "remove" ]; then
+        # Check the number of passed arguments.
+        if [ $# -ne 2 ]; then
+                echo "Error: $(basename $0) remove <container>"
+                exit
+        fi
+
+        # Check if the container directory exists.
+        CONTAINER_NAME="$2"
+        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
+        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
+                exit;
+        fi
+
+        # Check if the container isn't mounted.
+        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+        if [ $? -eq 0 ]; then
+                echo "Error: Container '$CONTAINER_NAME' is mounted!"
+                exit
+        fi
+
+        # Remove the container and it's temporary directory.
+        rm -rf $CONTAINER_DIR
+        rm -rf $CONTAINER_TMP_DIR
+
+        # Notify user about successful removal.
+        echo "Info: Container '$CONTAINER_NAME' removed."
+
+#-------------------------------------------------------------------------------
+# Command: mount <container>
+#-------------------------------------------------------------------------------
 elif [ "$1" = "mount" ]; then
-        # Checking the number of passed arguments
-        if [ $# -eq 3 ]; then
-                LOWER_NAME="$2"
-                LOWER_DIR="$BASE_LOWER_DIR/$LOWER_NAME"
-                UPPER_NAME="$3"
-                UPPER_DIR="$BASE_UPPER_DIR/$UPPER_NAME"
-
-                # Checking the existence of lower and upper directory
-                if [ ! -d $LOWER_DIR ] || [ ! -d $UPPER_DIR ]; then
-                        echo "Error: Specified upper or lower doesn't exist!"
-                else
-                        UPPER_MOUNT_DIR="$BASE_MOUNT_DIR/$UPPER_NAME"
-                        mountpoint -q $UPPER_MOUNT_DIR
-
-                        # Checking if the mount directory isn't mounted
-                        if [ ! $? -eq 0 ]; then
-                                WORKS_DIR="$BASE_MOUNT_DIR/.tmp"
-
-                                # Checking if the mount directory exists
-                                if [ ! -d $UPPER_MOUNT_DIR ]; then
-                                        mkdir -p $UPPER_MOUNT_DIR
-                                fi
-
-                                # Checking if the work directory exists
-                                if [ ! -d $WORKS_DIR ]; then
-                                        mkdir -p $WORKS_DIR
-                                fi
-
-                                # Constructing the rootfs using the overlay
-                                mount -t overlay overlay -o lowerdir=$LOWER_DIR,upperdir=$UPPER_DIR,workdir=$WORKS_DIR $UPPER_MOUNT_DIR
-
-                                # Enabling the access to the X11 server
-                                xhost +local:
-                        else
-                                echo "Error: The mount directory '$UPPER_MOUNT_DIR' is already mounted!"
-                        fi
-                fi
-        else
-                echo "Error: $0 mount <lower> <upper>"
+        # Check the number of passed arguments.
+        if [ $# -ne 2 ]; then
+                echo "Error: $(basename $0) mount <container>"
+                exit
         fi
-#------------------------------------------------------------------------------#
+        
+        # Check if the container directory exists.
+        CONTAINER_NAME="$2"
+        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
+        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
+                exit;
+        fi
+
+        # Check if the container isn't mounted.
+        CONTAINER_WORK_DIR="$CONTAINER_TMP_DIR/work"
+        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+        if [ $? -eq 0 ]; then
+                echo "Info: Container '$CONTAINER_NAME' is already mounted."
+                exit
+        fi
+
+        # Create the container temporary directories.
+        mkdir -p $CONTAINER_MOUNT_DIR $CONTAINER_WORK_DIR
+        
+        # Mount the container using overlayfs.
+        mount -t overlay overlay -o lowerdir=$BASE_DIR,upperdir=$CONTAINER_DIR,workdir=$CONTAINER_WORK_DIR $CONTAINER_MOUNT_DIR
+
+        # Enable remote access to the X11 server.
+        xhost +local: > /dev/null
+
+        # Notify user about successful mount.
+        echo "Info: Container '$CONTAINER_NAME' mounted."
+
+#-------------------------------------------------------------------------------
+# Command: umount <container>
+#-------------------------------------------------------------------------------
 elif [ "$1" = "umount" ]; then
-        # Checking the number of passed arguments
-        if [ $# -eq 2 ]; then
-                UPPER_NAME="$2"
-
-                # Checking the existance of upper directory
-                if [ -d $BASE_UPPER_DIR/$UPPER_NAME ]; then
-                        UPPER_MOUNT_DIR="$BASE_MOUNT_DIR/$UPPER_NAME"
-
-                        # Checking if the mount directory is mounted
-                        mountpoint -q $UPPER_MOUNT_DIR
-
-                        if [ $? -eq 0 ]; then
-                                # Unmounting the overlay rootfs
-                                umount -R $UPPER_MOUNT_DIR
-
-                                # Disabling the access to the X11 server
-                                xhost -local:
-                        else
-                                echo "Error: The specified upper '$UPPER_NAME' isn't mounted!"
-                        fi
-                else
-                        echo "Error: The specified upper '$UPPER_NAME' doesn't exist!"
-                fi
-        else
-                echo "Error: $0 umount <upper>"
+        # Check the number of passed arguments.
+        if [ $# -ne 2 ]; then
+                echo "Error: $(basename $0) umount <container>"
+                exit
         fi
-#------------------------------------------------------------------------------#
+        
+        # Check if the container directory exists.
+        CONTAINER_NAME="$2"
+        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
+        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
+                exit;
+        fi
+
+        # Check if the container isn't mounted.
+        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+        if [ $? -ne 0 ]; then
+                echo "Info: Container '$CONTAINER_NAME' is not mounted."
+                exit
+        fi
+
+        # Unmount the container.
+        umount -R $CONTAINER_MOUNT_DIR
+
+        # Disable remote access to the X11 server.
+        xhost -local: > /dev/null
+
+        # Notify user about successful unmount.
+        echo "Info: Container '$CONTAINER_NAME' unmounted."
+
+#-------------------------------------------------------------------------------
+# Command: enter
+#-------------------------------------------------------------------------------
 elif [ "$1" = "enter" ]; then
-        # Checking the number of passed arguments
-        if [ $# -eq 2 ]; then
-                UPPER_NAME="$2"
-
-                # Checking the existance of upper directory
-                if [ -d $BASE_UPPER_DIR/$UPPER_NAME ]; then
-                        UPPER_MOUNT_DIR="$BASE_MOUNT_DIR/$UPPER_NAME"
-
-                        # Checking if the mount directory is mounted
-                        mountpoint -q $UPPER_MOUNT_DIR
-
-                        if [ $? -eq 0 ]; then
-                                systemd-nspawn \
-                                        --boot \
-                                        --network-veth \
-                                        --bind /dev/dri \
-                                        --bind /dev/snd \
-                                        --property=DeviceAllow="char-alsa rwm" \
-                                        --bind-ro /tmp/.X11-unix/X0 \
-                                        --directory $UPPER_MOUNT_DIR
-                        else
-                                echo "Error: The specified upper '$UPPER_NAME' isn't mounted!"
-                        fi
-                else
-                        echo "Error: The specified upper '$UPPER_NAME' doesn't exist!"
-                fi
-        else
-                echo "Error: $0 enter <mounted>"
+        # Check the number of passed arguments.
+        if [ $# -ne 2 ]; then
+                echo "Error: $(basename $0) enter <container>"
+                exit
         fi
-#------------------------------------------------------------------------------#
+
+        # Check if the container directory exists.
+        CONTAINER_NAME="$2"
+        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
+        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
+                exit;
+        fi
+
+        # Check if the container isn't mounted.
+        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+        if [ $? -ne 0 ]; then
+                echo "Info: Container '$CONTAINER_NAME' is not mounted."
+                exit
+        fi
+
+        # Enter the container.
+        systemd-nspawn \
+                --boot \
+                --network-veth \
+                --bind /dev/dri \
+                --bind /dev/snd \
+                --bind-ro /tmp/.X11-unix/X0 \
+                --property DeviceAllow="char-alsa rwm" \
+                --directory $CONTAINER_MOUNT_DIR \
+                --machine $CONTAINER_NAME
+
+#-------------------------------------------------------------------------------
+# Command: help
+#-------------------------------------------------------------------------------
+elif [ "$1" = "--help" ]; then
+        echo -e "Usage: $(basename $0) <command> <container>"
+        echo -e "Commands:"
+        echo -e "\tcreate\t- creates new container of specified name."
+        echo -e "\tremove\t- removes entire container along with its files."
+        echo -e "\tmount\t- mounts the specified container on top of the base."
+        echo -e "\tumount\t- umount the specified container."
+        echo -e "\tenter\t- boots and enters the specified container."
 else
-        echo "$0 <list, create, mount, umount, enter>"
-#------------------------------------------------------------------------------#
+        echo -e "Info: $(basename $0) <command> <container>"
+#-------------------------------------------------------------------------------
 fi
