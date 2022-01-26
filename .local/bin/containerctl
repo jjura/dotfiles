@@ -1,32 +1,53 @@
 #!/bin/bash
 
+# Directory to be set by user.
+APP_DIR="/home/$SUDO_USER/Machines"
+
+# Container structure.
+DIR_ROOTFS="rootfs"
+DIR_MOUNT="mount"
+DIR_WORK="work"
+DIR_BASE="base"
+
+# Application structure.
+DIR_CONTAINERS="containers"
+DIR_BASES="bases"
+DIR_TOOLS="tools"
+
+# Global paths.
+APP_CONTAINERS_DIR="$APP_DIR/$DIR_CONTAINERS"
+APP_BASES_DIR="$APP_DIR/$DIR_BASES"
+APP_TOOLS_DIR="$APP_DIR/$DIR_TOOLS"
+
 #-------------------------------------------------------------------------------
-# Init
+# Initialize
 #-------------------------------------------------------------------------------
-APP_DIR="/home/$SUDO_USER/Containers"
-APP_TMP_DIR="$APP_DIR/.tmp"
 
 # Check if script is called as a sudo user.
 if [ -z $SUDO_USER ]; then
-        echo "Error: $(basename $0) must be called as a sudo user!"
+        echo "$(basename $0): must be called as a sudo user."
         exit
 fi
 
-# Check if the container directory exists.
+# Check if the application directory exists.
 if [ ! -d $APP_DIR ]; then
-        echo "Error: The specified directory '$APP_DIR' doesn't exist!"
-        exit
+        echo "$(basename $0): initializing the application directory."
+        mkdir -p $APP_DIR \
+                 $APP_TOOLS_DIR \
+                 $APP_BASES_DIR \
+                 $APP_CONTAINERS_DIR
 fi
 
 #-------------------------------------------------------------------------------
 # Debootstrap
 #-------------------------------------------------------------------------------
 DEBOOTSTRAP_URL="http://deb.debian.org/debian/pool/main/d/debootstrap/debootstrap_1.0.123.tar.gz"
-DEBOOTSTRAP_DIR="$APP_DIR/debootstrap"
-DEBOOTSTRAP_ARCHIVE="$APP_DIR/$(basename $DEBOOTSTRAP_URL)"
+DEBOOTSTRAP_DIR="$APP_TOOLS_DIR/debootstrap"
+DEBOOTSTRAP_ARCHIVE="$APP_TOOLS_DIR/$(basename $DEBOOTSTRAP_URL)"
 
 # Check if the debootstrap is already prepared.
 if [ ! -d $DEBOOTSTRAP_DIR ]; then
+
         # Download debootstrap archive.
         if [ ! -f $DEBOOTSTRAP_ARCHIVE ]; then
                 wget --quiet $DEBOOTSTRAP_URL -O $DEBOOTSTRAP_ARCHIVE
@@ -34,242 +55,313 @@ if [ ! -d $DEBOOTSTRAP_DIR ]; then
 
         # Extract debootstrap.
         if [ -f $DEBOOTSTRA_ARCHIVE ]; then
-                tar xf $DEBOOTSTRAP_ARCHIVE -C $APP_DIR
+                tar xf $DEBOOTSTRAP_ARCHIVE -C $APP_TOOLS_DIR
                 rm $DEBOOTSTRAP_ARCHIVE
         fi
 fi
 
 #-------------------------------------------------------------------------------
-# Base
+# command: list
 #-------------------------------------------------------------------------------
-BASE_ARCH="amd64"
-BASE_VARIANT="minbase"
-BASE_RELEASE="testing"
-BASE_PACKAGES="systemd-sysv,dbus"
-BASE_DIR="$APP_DIR/$BASE_RELEASE-$BASE_VARIANT-$BASE_ARCH"
+if [ "$1" = "list" ]; then
 
-# Check if the base is already downloaded.
-if [ ! -d $BASE_DIR ]; then
+        echo "-----------------------------------------------------------------"
+        echo "CONTAINERS:"
+        echo "-----------------------------------------------------------------"
+        for DIRECTORY in $(find $APP_CONTAINERS_DIR -mindepth 1 -maxdepth 1 -type d); do
+                CONTAINER_NAME="$(basename $DIRECTORY)"
+                CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
+                CONTAINER_BASE="$(basename $(readlink -f $CONTAINER_DIR/$DIR_BASE))"
+
+                # Check if the container is booted up.
+                machinectl --quiet show $CONTAINER_NAME > /dev/null 2>&1
+
+                if [ $? -eq 0 ]; then
+                        echo "- $CONTAINER_NAME [$CONTAINER_BASE] (mounted, booted)"
+                        continue
+                fi
+
+                # Check if the container is mounted.
+                mountpoint -q $CONTAINER_DIR/$DIR_MOUNT
+
+                if [ $? -eq 0 ]; then
+                        echo "- $CONTAINER_NAME [$CONTAINER_BASE] (mounted)"
+                        continue
+                fi
+
+                echo "- $CONTAINER_NAME [$CONTAINER_BASE]"
+        done
+
+        echo "-----------------------------------------------------------------"
+        echo "BASES:"
+        echo "-----------------------------------------------------------------"
+        for DIRECTORY in $(find $APP_BASES_DIR -mindepth 1 -maxdepth 1 -type d); do
+                echo "- $(basename $DIRECTORY)"
+        done
+
+#-------------------------------------------------------------------------------
+# command: download <arch> <variant> <release>
+#-------------------------------------------------------------------------------
+elif [ "$1" = "download" ]; then
+
+        # Check the number of passed arguments.
+        if [ $# -ne 4 ]; then
+                echo "$(basename $0): download <arch> <variant> <release>"
+                exit
+        fi
+
+        # Check if the base does not already exist.
+        BASE_ARCH="$2"
+        BASE_VARIANT="$3"
+        BASE_RELEASE="$4"
+        BASE_PACKAGES="systemd-sysv,dbus"
+        BASE_DIR="$APP_BASES_DIR/$BASE_ARCH-$BASE_RELEASE-$BASE_VARIANT"
+
+        if [ -d $BASE_DIR ]; then
+                echo "$(basename $0): specified base already exists."
+                exit
+        fi
+
         # Download the base.
         DEBOOTSTRAP_DIR=$DEBOOTSTRAP_DIR $DEBOOTSTRAP_DIR/debootstrap \
                 --include $BASE_PACKAGES \
                 --variant $BASE_VARIANT \
-                --arch $BASE_ARCH \
+                --arch    $BASE_ARCH \
                 $BASE_RELEASE $BASE_DIR
-fi
 
 #-------------------------------------------------------------------------------
-# Command: create <container>
+# command: create <base> <container>
 #-------------------------------------------------------------------------------
-if [ "$1" = "create" ]; then
+elif [ "$1" = "create" ]; then
+
         # Check the number of passed arguments.
-        if [ $# -ne 2 ]; then
-                echo "Error: $(basename $0) create <container>"
+        if [ $# -ne 3 ]; then
+                echo "$(basename $0): create <base> <container>"
                 exit
         fi
-
-        CONTAINER_NAME="$2"
-        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
 
         # Check if the container directory exists.
+        CONTAINER_NAME="$3"
+        CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
+
         if [ -d $CONTAINER_DIR ]; then
-                echo "Error: Container '$CONTAINER_NAME' already exists!"
+                echo "$(basename $0): specified container already exists."
                 exit
         fi
 
+        # Check if the base directory exists.
+        CONTAINER_BASE_NAME="$2"
+        CONTAINER_BASE_DIR="$APP_BASES_DIR/$CONTAINER_BASE_NAME"
+
+        if [ ! -d $CONTAINER_BASE_DIR ]; then
+                echo "$(basename $0): specified base does not exist."
+                exit
+        fi
+
+        # Create container structure directory.
+        mkdir -p $CONTAINER_DIR \
+                 $CONTAINER_DIR/$DIR_ROOTFS \
+                 $CONTAINER_DIR/$DIR_MOUNT \
+                 $CONTAINER_DIR/$DIR_WORK
+
+        # Create a link to the base directory.
+        ln -s $CONTAINER_BASE_DIR $CONTAINER_DIR/$DIR_BASE
+
         # Create container configuration directory.
-        mkdir -p $CONTAINER_DIR/etc/systemd/network
+        mkdir -p $CONTAINER_DIR/$DIR_ROOTFS/etc/systemd/network
 
         # Configure the hostname.
         echo -e "127.0.0.1 localhost\n127.0.0.1 $CONTAINER_NAME" \
-                > $CONTAINER_DIR/etc/hosts
+                > $CONTAINER_DIR/$DIR_ROOTFS/etc/hosts
 
         echo -e "$CONTAINER_NAME" \
-                > $CONTAINER_DIR/etc/hostname
+                > $CONTAINER_DIR/$DIR_ROOTFS/etc/hostname
 
         # Configure the environment variables.
         echo -e "export DISPLAY=:0\nexport TERM=xterm-256color" \
-                > $CONTAINER_DIR/etc/environment
+                > $CONTAINER_DIR/$DIR_ROOTFS/etc/environment
 
         # Configure the selected audio card and device.
         echo -e "defaults.pcm.card 0\ndefaults.pcm.device 1" \
-                > $CONTAINER_DIR/etc/asound.conf
+                > $CONTAINER_DIR/$DIR_ROOTFS/etc/asound.conf
 
         # Configure the host0 virtual network card.
         echo -e "[Match]\nName=host0\n[Network]\nDHCP=yes" \
-                > $CONTAINER_DIR/etc/systemd/network/20-wired.network
+                > $CONTAINER_DIR/$DIR_ROOTFS/etc/systemd/network/20-wired.network
 
         # Notify user about successful creation.
-        echo "Info: Container '$CONTAINER_NAME' created."
+        echo "$(basename $0): specified container created."
 
 #-------------------------------------------------------------------------------
-# Command: remove <container>
+# command: destroy <container>
 #-------------------------------------------------------------------------------
-elif [ "$1" = "remove" ]; then
+elif [ "$1" = "destroy" ]; then
+
         # Check the number of passed arguments.
         if [ $# -ne 2 ]; then
-                echo "Error: $(basename $0) remove <container>"
+                echo "$(basename $0): destroy <container>"
                 exit
         fi
 
         # Check if the container directory exists.
         CONTAINER_NAME="$2"
-        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
-        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+        CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
 
         if [ ! -d $CONTAINER_DIR ]; then
-                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
-                exit;
-        fi
-
-        # Check if the container isn't mounted.
-        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
-
-        mountpoint -q $CONTAINER_MOUNT_DIR
-        if [ $? -eq 0 ]; then
-                echo "Error: Container '$CONTAINER_NAME' is mounted!"
+                echo "$(basename $0): specified container does not exist."
                 exit
         fi
 
-        # Remove the container and it's temporary directory.
-        rm -rf $CONTAINER_DIR
-        rm -rf $CONTAINER_TMP_DIR
+        # Check if the container is mounted.
+        mountpoint -q $CONTAINER_DIR/$DIR_MOUNT
+
+        if [ $? -eq 0 ]; then
+                echo "$(basename $0): specified container is mounted."
+                exit
+        fi
+
+        # Delete container directories.
+        rm -rf $CONTAINER_DIR/$DIR_WORK \
+               $CONTAINER_DIR/$DIR_BASE \
+               $CONTAINER_DIR/$DIR_MOUNT \
+               $CONTAINER_DIR/$DIR_ROOTFS \
+               $CONTAINER_DIR
 
         # Notify user about successful removal.
-        echo "Info: Container '$CONTAINER_NAME' removed."
+        echo "$(basename $0): specified container destroyed."
 
 #-------------------------------------------------------------------------------
-# Command: mount <container>
+# command: mount <container>
 #-------------------------------------------------------------------------------
 elif [ "$1" = "mount" ]; then
+
         # Check the number of passed arguments.
         if [ $# -ne 2 ]; then
-                echo "Error: $(basename $0) mount <container>"
+                echo "$(basename $0): mount <container>"
                 exit
         fi
-        
+
         # Check if the container directory exists.
         CONTAINER_NAME="$2"
-        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
-        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+        CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
 
         if [ ! -d $CONTAINER_DIR ]; then
-                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
-                exit;
-        fi
-
-        # Check if the container isn't mounted.
-        CONTAINER_WORK_DIR="$CONTAINER_TMP_DIR/work"
-        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
-
-        mountpoint -q $CONTAINER_MOUNT_DIR
-        if [ $? -eq 0 ]; then
-                echo "Info: Container '$CONTAINER_NAME' is already mounted."
+                echo "$(basename $0): specified container does not exist."
                 exit
         fi
 
-        # Create the container temporary directories.
-        mkdir -p $CONTAINER_MOUNT_DIR $CONTAINER_WORK_DIR
-        
-        # Mount the container using overlayfs.
-        mount -t overlay overlay -o lowerdir=$BASE_DIR,upperdir=$CONTAINER_DIR,workdir=$CONTAINER_WORK_DIR $CONTAINER_MOUNT_DIR
+        # Check if the container is mounted.
+        mountpoint -q $CONTAINER_DIR/$DIR_MOUNT
 
-        # Enable remote access to the X11 server.
+        if [ $? -eq 0 ]; then
+                echo "$(basename $0): specified container is mounted."
+                exit
+        fi
+
+        # Mount the container on top of its base.
+        mount -t overlay overlay \
+              -o lowerdir=$CONTAINER_DIR/$DIR_BASE,upperdir=$CONTAINER_DIR/$DIR_ROOTFS,workdir=$CONTAINER_DIR/$DIR_WORK \
+              $CONTAINER_DIR/$DIR_MOUNT
+
+        # Enable remote access to the window server.
         xhost +local: > /dev/null
 
         # Notify user about successful mount.
-        echo "Info: Container '$CONTAINER_NAME' mounted."
+        echo "$(basename $0): specified container mounted."
 
 #-------------------------------------------------------------------------------
-# Command: umount <container>
+# command: umount <container>
 #-------------------------------------------------------------------------------
 elif [ "$1" = "umount" ]; then
+
         # Check the number of passed arguments.
         if [ $# -ne 2 ]; then
-                echo "Error: $(basename $0) umount <container>"
+                echo "$(basename $0): umount <container>"
+                exit
+        fi
+
+        # Check if the container directory exists.
+        CONTAINER_NAME="$2"
+        CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "$(basename $0): specified container does not exist."
                 exit
         fi
         
-        # Check if the container directory exists.
-        CONTAINER_NAME="$2"
-        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
-        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+        # Check if the container is mounted.
+        mountpoint -q $CONTAINER_DIR/$DIR_MOUNT
 
-        if [ ! -d $CONTAINER_DIR ]; then
-                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
-                exit;
-        fi
-
-        # Check if the container isn't mounted.
-        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
-
-        mountpoint -q $CONTAINER_MOUNT_DIR
         if [ $? -ne 0 ]; then
-                echo "Info: Container '$CONTAINER_NAME' is not mounted."
+                echo "$(basename $0): specified container is not mounted."
                 exit
         fi
 
-        # Unmount the container.
-        umount -R $CONTAINER_MOUNT_DIR
+        # Check if the container is booted up.
+        machinectl --quiet show $CONTAINER_NAME > /dev/null 2>&1
 
-        # Disable remote access to the X11 server.
-        xhost -local: > /dev/null
+        if [ $? -eq 0 ]; then
+                echo "$(basename $0): specified container is booted up."
+                exit
+        fi
 
-        # Notify user about successful unmount.
-        echo "Info: Container '$CONTAINER_NAME' unmounted."
+        # Umount the container.
+        umount -R $CONTAINER_DIR/$DIR_MOUNT
+
+        # Notify user about successful umount.
+        echo "$(basename $0): specified container unmounted."
 
 #-------------------------------------------------------------------------------
-# Command: enter
+# command: boot <container>
 #-------------------------------------------------------------------------------
-elif [ "$1" = "enter" ]; then
+elif [ "$1" = "boot" ]; then
+
         # Check the number of passed arguments.
         if [ $# -ne 2 ]; then
-                echo "Error: $(basename $0) enter <container>"
+                echo "$(basename $0): boot <container>"
                 exit
         fi
 
         # Check if the container directory exists.
         CONTAINER_NAME="$2"
-        CONTAINER_DIR="$APP_DIR/$CONTAINER_NAME"
-        CONTAINER_TMP_DIR="$APP_TMP_DIR/$CONTAINER_NAME"
+        CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
 
         if [ ! -d $CONTAINER_DIR ]; then
-                echo "Error: Container '$CONTAINER_NAME' doesn't exist!"
-                exit;
-        fi
-
-        # Check if the container isn't mounted.
-        CONTAINER_MOUNT_DIR="$CONTAINER_TMP_DIR/mount"
-
-        mountpoint -q $CONTAINER_MOUNT_DIR
-        if [ $? -ne 0 ]; then
-                echo "Info: Container '$CONTAINER_NAME' is not mounted."
+                echo "$(basename $0): specified container does not exist."
                 exit
         fi
 
-        # Enter the container.
-        systemd-nspawn \
+        # Check if the container is mounted.
+        mountpoint -q $CONTAINER_DIR/$DIR_MOUNT
+
+        if [ $? -ne 0 ]; then
+                echo "$(basename $0): specified container is not mounted."
+                exit
+        fi
+
+        # Check if the container is booted up.
+        machinectl --quiet show $CONTAINER_NAME > /dev/null 2>&1
+
+        if [ $? -eq 0 ]; then
+                echo "$(basename $0): specified container is booted up."
+                exit
+        fi
+
+        # Boot the container.
+        nohup systemd-nspawn \
                 --boot \
                 --network-veth \
                 --bind /dev/dri \
                 --bind /dev/snd \
+                --bind /dev/bus/usb \
                 --bind-ro /tmp/.X11-unix/X0 \
                 --property DeviceAllow="char-alsa rwm" \
-                --directory $CONTAINER_MOUNT_DIR \
-                --machine $CONTAINER_NAME
+                --property DeviceAllow="char-usb_device rwm" \
+                --directory $CONTAINER_DIR/$DIR_MOUNT \
+                --machine $CONTAINER_NAME & > /dev/null
 
-#-------------------------------------------------------------------------------
-# Command: help
-#-------------------------------------------------------------------------------
-elif [ "$1" = "--help" ]; then
-        echo -e "Usage: $(basename $0) <command> <container>"
-        echo -e "Commands:"
-        echo -e "\tcreate\t- creates new container of specified name."
-        echo -e "\tremove\t- removes entire container along with its files."
-        echo -e "\tmount\t- mounts the specified container on top of the base."
-        echo -e "\tumount\t- umount the specified container."
-        echo -e "\tenter\t- boots and enters the specified container."
-else
-        echo -e "Info: $(basename $0) <command> <container>"
+        # Notify user about successful boot.
+        echo "$(basename $0): specified container booted."
+
 #-------------------------------------------------------------------------------
 fi

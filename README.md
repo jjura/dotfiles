@@ -31,6 +31,7 @@
 ### Teams
 - libxtst6
 - libsecret-1-0
+- libgdk-pixbuf2.0-0
 ### Other
 - compton
 - apulse
