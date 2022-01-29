@@ -14,6 +14,12 @@ DIR_CONTAINERS="containers"
 DIR_BASES="bases"
 DIR_TOOLS="tools"
 
+# Colors
+COLOR_GRAY="\033[1;30m"
+COLOR_GREEN="\033[1;32m"
+COLOR_YELLOW="\033[1;33m"
+COLOR_DEFAULT="\033[0m"
+
 # Global paths.
 APP_CONTAINERS_DIR="$APP_DIR/$DIR_CONTAINERS"
 APP_BASES_DIR="$APP_DIR/$DIR_BASES"
@@ -63,7 +69,7 @@ fi
 #-------------------------------------------------------------------------------
 # command: list
 #-------------------------------------------------------------------------------
-if [ "$1" = "list" ]; then
+if [ "$1" = "list" ] || [ -z "$1" ]; then
 
         echo "-----------------------------------------------------------------"
         echo "CONTAINERS:"
@@ -73,23 +79,25 @@ if [ "$1" = "list" ]; then
                 CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
                 CONTAINER_BASE="$(basename $(readlink -f $CONTAINER_DIR/$DIR_BASE))"
 
+                unset CONTAINER_BOOTED
+                unset CONTAINER_MOUNTED
+
                 # Check if the container is booted up.
                 machinectl --quiet show $CONTAINER_NAME > /dev/null 2>&1
 
                 if [ $? -eq 0 ]; then
-                        echo "- $CONTAINER_NAME [$CONTAINER_BASE] (mounted, booted)"
-                        continue
+                        CONTAINER_BOOTED="${COLOR_GREEN}booted${COLOR_DEFAULT}"
                 fi
 
                 # Check if the container is mounted.
                 mountpoint -q $CONTAINER_DIR/$DIR_MOUNT
 
                 if [ $? -eq 0 ]; then
-                        echo "- $CONTAINER_NAME [$CONTAINER_BASE] (mounted)"
-                        continue
+                        CONTAINER_MOUNTED="${COLOR_YELLOW}mounted${COLOR_DEFAULT}"
                 fi
 
-                echo "- $CONTAINER_NAME [$CONTAINER_BASE]"
+                echo -e "- $CONTAINER_NAME ($COLOR_GRAY$CONTAINER_BASE$COLOR_DEFAULT)" \
+                        "$CONTAINER_MOUNTED $CONTAINER_BOOTED"
         done
 
         echo "-----------------------------------------------------------------"
@@ -358,10 +366,22 @@ elif [ "$1" = "boot" ]; then
                 --property DeviceAllow="char-alsa rwm" \
                 --property DeviceAllow="char-usb_device rwm" \
                 --directory $CONTAINER_DIR/$DIR_MOUNT \
-                --machine $CONTAINER_NAME & > /dev/null
+                --machine $CONTAINER_NAME \
+                > /dev/null 2>&1 &
 
         # Notify user about successful boot.
         echo "$(basename $0): specified container booted."
-
 #-------------------------------------------------------------------------------
+# help
+#-------------------------------------------------------------------------------
+else
+        echo -e "$(basename $0) <command>\n\n" \
+                "Commands:\n" \
+                "- list $COLOR_GRAY: lists containers and their base.$COLOR_DEFAULT\n" \
+                "- download $COLOR_GRAY: download specified base.$COLOR_DEFAULT\n" \
+                "- create $COLOR_GRAY: creates an empty container of specified name.$COLOR_DEFAULT\n" \
+                "- destroy $COLOR_GRAY: destroys specified container and deletes its files.$COLOR_DEFAULT\n" \
+                "- mount $COLOR_GRAY: mounts the specified container.$COLOR_DEFAULT\n" \
+                "- umount $COLOR_GRAY: unmounts the specified container.$COLOR_DEFAULT\n" \
+                "- boot $COLOR_GRAY: boots the specified container in the background.$COLOR_DEFAULT\n"
 fi
