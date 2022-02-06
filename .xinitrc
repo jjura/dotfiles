@@ -10,5 +10,10 @@ if [ -f $HOME/Images/wallpaper ]; then
     feh --no-fehbg --bg-scale $HOME/Images/wallpaper
 fi
 
+if xrandr | grep "DP-3-1 connected"; then
+    xrandr --output DP-3-1 --set "Broadcast RGB" "Full"
+    xrandr --output DP-3-2 --set "Broadcast RGB" "Full"
+fi
+
 statusbar &
 exec dwm

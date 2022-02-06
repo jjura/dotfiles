@@ -1,17 +1,18 @@
 ## Packages
 ### System
-- sudo
-- locales
 - systemd-sysv
 - linux-image-amd64
-- firmware-amd-graphics
-- fonts-dejavu-core
+- firmware-iwlwifi
+- firmware-sof-signed
 - xserver-xorg-core
-- xserver-xorg-video-amdgpu
 - xserver-xorg-input-libinput
 - x11-xserver-utils
 - xinit
 - dbus
+- bluez
+- locales
+- wpasupplicant
+- fonts-dejavu-core
 - alsa-utils
 - xdg-utils
 ### Programming
@@ -35,6 +36,7 @@
 ### Other
 - compton
 - apulse
+- sudo
 
 ## Partitions
 ```
@@ -60,6 +62,7 @@ mount -t ext4 /dev/nvme0n1p2 /mnt
 mkdir -p /mnt/{boot,home}
 mount -t ext4 /dev/nvme0n1p3 /mnt/home
 mount -t vfat /dev/nvme0n1p1 /mnt/boot
+
 debootstrap --variant=minbase --arch=amd64 testing /mnt
 ```
 
@@ -130,19 +133,26 @@ blkid >> /etc/fstab:
     UUID=<UUID>         /       ext4    defaults        0       1
     # /dev/nvme0n1p3:
     UUID=<UUID>         /home   ext4    defaults        0       2
-
 ```
 
-## Network
+## Dock wired network
 ```
 systemctl enable systemd-networkd.service
 
 /etc/systemd/network/20-wired.network:
     [Match]
-    Name=enp37s0
+    Name=enxc025a5e42bd9
 
     [Network]
     DHCP=yes
+```
+
+## Wireless network
+```
+wpa_passphrase <SSID> <Password> > /etc/wpa_supplicant/wpa_supplicant-<IF>.conf
+
+systemctl enable wpa_supplicant@<IF>.service
+
 ```
 
 ## Font configuration
@@ -153,9 +163,5 @@ dpkg-reconfigure fontconfig
 
 ## Chrome configuration
 ```
-Flags:
-chrome://flags/#enable-gpu-rasterization
-chrome://gpu
-
 /usr/local/lib/chrome/google-chrome --use-gl=desktop --enable-features=VaapiVideoDecoder $@
 ```
