@@ -1,18 +1,16 @@
 ## Packages
 ### System
 - systemd-sysv
+- fonts-dejavu-core
+- firmware-amd-graphics
 - linux-image-amd64
-- firmware-iwlwifi
-- firmware-sof-signed
 - xserver-xorg-core
+- xserver-xorg-video-amdgpu
 - xserver-xorg-input-libinput
 - x11-xserver-utils
 - xinit
 - dbus
-- bluez
 - locales
-- wpasupplicant
-- fonts-dejavu-core
 - alsa-utils
 - xdg-utils
 ### Programming
@@ -135,13 +133,13 @@ blkid >> /etc/fstab:
     UUID=<UUID>         /home   ext4    defaults        0       2
 ```
 
-## Dock wired network
+## Wired network
 ```
 systemctl enable systemd-networkd.service
 
 /etc/systemd/network/20-wired.network:
     [Match]
-    Name=enxc025a5e42bd9
+    Name=enp37s0
 
     [Network]
     DHCP=yes
