@@ -1,3 +1,0 @@
-#!/bin/sh
-
-$HOME/.local/opt/google-chrome/google-chrome --enable-features=VaapiVideoDecoder $@

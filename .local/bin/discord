@@ -1,3 +1,0 @@
-#!/bin/sh
-
-apulse $HOME/.local/opt/discord/Discord $@
