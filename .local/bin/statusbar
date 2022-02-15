@@ -1,8 +1,6 @@
 #!/bin/bash
 
 while true; do
-    DATE=$(date +%d.%m.%Y)
-    TIME=$(date +%H:%M)
-    xsetroot -name " $DATE | $TIME "
-    sleep 1m
+    xsetroot -name " $(date +%d\ %B\ %Y,\ %H:%M) "
+    sleep 1m;
 done

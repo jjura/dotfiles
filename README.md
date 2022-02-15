@@ -13,6 +13,7 @@
 - locales
 - alsa-utils
 - xdg-utils
+- file
 ### Programming
 - gcc
 - git
@@ -32,7 +33,6 @@
 - libsecret-1-0
 - libgdk-pixbuf2.0-0
 ### Other
-- compton
 - apulse
 - sudo
 
@@ -157,9 +157,4 @@ systemctl enable wpa_supplicant@<IF>.service
 ```
 dpkg-reconfigure fontconfig-config
 dpkg-reconfigure fontconfig
-```
-
-## Chrome configuration
-```
-/usr/local/lib/chrome/google-chrome --use-gl=desktop --enable-features=VaapiVideoDecoder $@
 ```

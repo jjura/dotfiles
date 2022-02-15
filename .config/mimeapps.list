@@ -1,0 +1,8 @@
+[Default Applications]
+text/plain=neovim.desktop
+text/troff=neovim.desktop
+text/xml=neovim.desktop
+text/x-c=neovim.desktop
+text/x-diff=neovim.desktop
+text/x-makefile=neovim.desktop
+text/x-shellscript=neovim.desktop
