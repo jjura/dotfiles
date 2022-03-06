@@ -24,14 +24,8 @@
 - libxinerama-dev
 ### Chrome
 - libgtk-3-0
-- libx11-xcb1
-### Discord
-- libxss1
 - libnss3
-### Teams
-- libxtst6
-- libsecret-1-0
-- libgdk-pixbuf2.0-0
+- libx11-xcb1
 ### Other
 - apulse
 - sudo
@@ -157,4 +151,11 @@ systemctl enable wpa_supplicant@<IF>.service
 ```
 dpkg-reconfigure fontconfig-config
 dpkg-reconfigure fontconfig
+```
+
+## Spotify, Discord, Teams
+```
+#!/bin/sh
+
+chrome --app=<URL>
 ```
