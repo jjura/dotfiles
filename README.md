@@ -1,6 +1,7 @@
 ## Packages
 ### System
 - systemd-sysv
+- systemd-container
 - fonts-dejavu-core
 - firmware-amd-graphics
 - linux-image-amd64
@@ -26,6 +27,9 @@
 - libgtk-3-0
 - libnss3
 - libx11-xcb1
+### Container
+- libgl1 (container)
+- libegl1 (container)
 ### Other
 - apulse
 - sudo
