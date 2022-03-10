@@ -163,3 +163,11 @@ dpkg-reconfigure fontconfig
 
 chrome --app=<URL>
 ```
+
+## KVM AMDGPU reset fix
+```
+- Build vendor-reset (https://github.com/gnif/vendor-reset) kernel module (can be done inside container).
+- Copy the kernel module into host's /lib/module and run depmod without any parameters.
+- Add the kernel module into /etc/modules file.
+- Execute: echo 'device_specific' > /sys/bus/pci/devices/<PCI GPU>/reset_method
+```
