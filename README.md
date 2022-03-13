@@ -27,9 +27,12 @@
 - libgtk-3-0
 - libnss3
 - libx11-xcb1
+### Discord
+- libxss1
+- libatomic1
 ### Container
-- libgl1 (container)
-- libegl1 (container)
+- libgl1
+- libegl1
 ### Other
 - apulse
 - sudo
