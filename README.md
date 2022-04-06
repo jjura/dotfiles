@@ -137,6 +137,9 @@ blkid >> /etc/fstab:
 ## Wired network
 ```
 systemctl enable systemd-networkd.service
+systemctl enable systemd-resolved.service
+
+ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 
 /etc/systemd/network/20-wired.network:
     [Match]
@@ -148,10 +151,20 @@ systemctl enable systemd-networkd.service
 
 ## Wireless network
 ```
-wpa_passphrase <SSID> <Password> > /etc/wpa_supplicant/wpa_supplicant-<IF>.conf
+wpa_passphrase <SSID> <Password> >> /etc/wpa_supplicant/wpa_supplicant-wlp0s20f3.conf
 
-systemctl enable wpa_supplicant@<IF>.service
+systemctl enable systemd-networkd.service
+systemctl enable systemd-resolved.service
+systemctl enable wpa_supplicant@wlp0s20f3.service
 
+ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+/etc/systemd/network/21-wireless.network:
+    [Match]
+    Name=wlp0s20f3
+
+    [Network]
+    DHCP=yes
 ```
 
 ## Font configuration
