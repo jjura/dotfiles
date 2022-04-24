@@ -222,6 +222,8 @@ elif [ "$1" = "create" ]; then
 		echo -e "[Match]\nName=host0\n[Network]\nDHCP=yes" \
 			> /etc/systemd/network/20-wired.network
 
+		echo -e "root\nroot" | passwd root
+
 		systemctl enable systemd-networkd
 		systemctl enable systemd-resolved
 		EOF
