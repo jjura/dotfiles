@@ -157,12 +157,12 @@ elif [ "$1" = "update" ]; then
                 exit
         fi
 
-        # Chroot into base and update
-        systemd-nspawn --directory $CONTAINER_BASE_DIR --pipe /bin/bash << EOF
-apt-get update
-apt-get dist-upgrade -y
-apt-get clean
-EOF
+        # Enter the base and update it.
+        systemd-nspawn --directory $CONTAINER_BASE_DIR --pipe /bin/bash <<- EOF
+		apt-get update
+		apt-get dist-upgrade -y
+		apt-get clean
+		EOF
 
 #-------------------------------------------------------------------------------
 # command: create <base> <container>
@@ -202,27 +202,32 @@ elif [ "$1" = "create" ]; then
         # Create a link to the base directory.
         ln -s $CONTAINER_BASE_DIR $CONTAINER_DIR/$DIR_BASE
 
-        # Create container configuration directory.
-        mkdir -p $CONTAINER_DIR/$DIR_ROOTFS/etc/systemd/network
+        # Mount the container on top of its base.
+        mount -t overlay overlay \
+              -o lowerdir=$CONTAINER_DIR/$DIR_BASE,upperdir=$CONTAINER_DIR/$DIR_ROOTFS,workdir=$CONTAINER_DIR/$DIR_WORK \
+              $CONTAINER_DIR/$DIR_MOUNT
 
-        # Configure the hostname.
-        echo -e "127.0.0.1 localhost\n127.0.0.1 $CONTAINER_NAME" \
-                > $CONTAINER_DIR/$DIR_ROOTFS/etc/hosts
+        # Configure the container.
+        systemd-nspawn --directory $CONTAINER_DIR/$DIR_MOUNT --pipe /bin/bash <<- EOF
+		mkdir -p /etc/systemd/network
 
-        echo -e "$CONTAINER_NAME" \
-                > $CONTAINER_DIR/$DIR_ROOTFS/etc/hostname
+		echo -e "$CONTAINER_NAME" \
+			> /etc/hostname
+		echo -e "127.0.0.1 localhost\n127.0.0.1 $CONTAINER_NAME" \
+			> /etc/hosts
+		echo -e "export DISPLAY=:0\nexport TERM=xterm-256color" \
+			> /etc/environment
+		echo -e "defaults.pcm.card 0\ndefaults.pcm.device 1" \
+			> /etc/asound.conf
+		echo -e "[Match]\nName=host0\n[Network]\nDHCP=yes" \
+			> /etc/systemd/network/20-wired.network
 
-        # Configure the environment variables.
-        echo -e "export DISPLAY=:0\nexport TERM=xterm-256color" \
-                > $CONTAINER_DIR/$DIR_ROOTFS/etc/environment
+		systemctl enable systemd-networkd
+		systemctl enable systemd-resolved
+		EOF
 
-        # Configure the selected audio card and device.
-        echo -e "defaults.pcm.card 0\ndefaults.pcm.device 1" \
-                > $CONTAINER_DIR/$DIR_ROOTFS/etc/asound.conf
-
-        # Configure the host0 virtual network card.
-        echo -e "[Match]\nName=host0\n[Network]\nDHCP=yes" \
-                > $CONTAINER_DIR/$DIR_ROOTFS/etc/systemd/network/20-wired.network
+        # Umount the container.
+        umount -R $CONTAINER_DIR/$DIR_MOUNT
 
         # Notify user about successful creation.
         echo "$(basename $0): specified container created."
