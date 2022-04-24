@@ -1,5 +1,5 @@
 diff --git a/config.def.h b/config.def.h
-index a2ac963..0f48705 100644
+index a2ac963..7dfb7d4 100644
 --- a/config.def.h
 +++ b/config.def.h
 @@ -2,11 +2,12 @@
@@ -54,21 +54,23 @@ index a2ac963..0f48705 100644
  #define TAGKEYS(KEY,TAG) \
  	{ MODKEY,                       KEY,      view,           {.ui = 1 << TAG} }, \
  	{ MODKEY|ControlMask,           KEY,      toggleview,     {.ui = 1 << TAG} }, \
-@@ -59,11 +59,13 @@ static const Layout layouts[] = {
+@@ -59,11 +59,15 @@ static const Layout layouts[] = {
  static char dmenumon[2] = "0"; /* component of dmenucmd, manipulated in spawn() */
  static const char *dmenucmd[] = { "dmenu_run", "-m", dmenumon, "-fn", dmenufont, "-nb", col_gray1, "-nf", col_gray3, "-sb", col_cyan, "-sf", col_gray4, NULL };
  static const char *termcmd[]  = { "st", NULL };
++static const char *slockcmd[] = { "slock", NULL };
 +static const char *nnncmd[]   = { "st", "-c", "center", "-g", "96x32", "-e", "nnn", "-d", NULL };
  
  static Key keys[] = {
  	/* modifier                     key        function        argument */
  	{ MODKEY,                       XK_p,      spawn,          {.v = dmenucmd } },
  	{ MODKEY|ShiftMask,             XK_Return, spawn,          {.v = termcmd } },
++	{ MODKEY|ShiftMask,             XK_l,      spawn,          {.v = slockcmd } },
 +	{ MODKEY|ShiftMask,             XK_m,      spawn,          {.v = nnncmd } },
  	{ MODKEY,                       XK_b,      togglebar,      {0} },
  	{ MODKEY,                       XK_j,      focusstack,     {.i = +1 } },
  	{ MODKEY,                       XK_k,      focusstack,     {.i = -1 } },
-@@ -85,6 +87,9 @@ static Key keys[] = {
+@@ -85,6 +89,9 @@ static Key keys[] = {
  	{ MODKEY,                       XK_period, focusmon,       {.i = +1 } },
  	{ MODKEY|ShiftMask,             XK_comma,  tagmon,         {.i = -1 } },
  	{ MODKEY|ShiftMask,             XK_period, tagmon,         {.i = +1 } },
@@ -79,7 +81,7 @@ index a2ac963..0f48705 100644
  	TAGKEYS(                        XK_2,                      1)
  	TAGKEYS(                        XK_3,                      2)
 diff --git a/dwm.c b/dwm.c
-index a96f33c..85f4be8 100644
+index 5f16260..70dabe4 100644
 --- a/dwm.c
 +++ b/dwm.c
 @@ -92,7 +92,7 @@ struct Client {
@@ -131,7 +133,7 @@ index a96f33c..85f4be8 100644
  			c->isfloating = r->isfloating;
  			c->tags |= r->tags;
  			for (m = mons; m && m->num != r->monitor; m = m->next);
-@@ -639,6 +644,7 @@ createmon(void)
+@@ -640,6 +645,7 @@ createmon(void)
  	m->nmaster = nmaster;
  	m->showbar = showbar;
  	m->topbar = topbar;
@@ -139,7 +141,7 @@ index a96f33c..85f4be8 100644
  	m->lt[0] = &layouts[0];
  	m->lt[1] = &layouts[1 % LENGTH(layouts)];
  	strncpy(m->ltsymbol, layouts[0].symbol, sizeof m->ltsymbol);
-@@ -1060,6 +1066,10 @@ manage(Window w, XWindowAttributes *wa)
+@@ -1061,6 +1067,10 @@ manage(Window w, XWindowAttributes *wa)
  	updatewindowtype(c);
  	updatesizehints(c);
  	updatewmhints(c);
@@ -150,7 +152,7 @@ index a96f33c..85f4be8 100644
  	XSelectInput(dpy, w, EnterWindowMask|FocusChangeMask|PropertyChangeMask|StructureNotifyMask);
  	grabbuttons(c, 0);
  	if (!c->isfloating)
-@@ -1501,6 +1511,16 @@ setfullscreen(Client *c, int fullscreen)
+@@ -1502,6 +1512,16 @@ setfullscreen(Client *c, int fullscreen)
  	}
  }
  
@@ -167,7 +169,7 @@ index a96f33c..85f4be8 100644
  void
  setlayout(const Arg *arg)
  {
-@@ -1687,18 +1707,18 @@ tile(Monitor *m)
+@@ -1688,18 +1708,18 @@ tile(Monitor *m)
  	if (n > m->nmaster)
  		mw = m->nmaster ? m->ww * m->mfact : 0;
  	else
@@ -196,7 +198,7 @@ index a96f33c..85f4be8 100644
  		}
  }
  
-@@ -2015,8 +2035,10 @@ updatewindowtype(Client *c)
+@@ -2016,8 +2036,10 @@ updatewindowtype(Client *c)
  
  	if (state == netatom[NetWMFullscreen])
  		setfullscreen(c, 1);

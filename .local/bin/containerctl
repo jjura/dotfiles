@@ -138,6 +138,33 @@ elif [ "$1" = "download" ]; then
                 $BASE_RELEASE $BASE_DIR
 
 #-------------------------------------------------------------------------------
+# command: update <base>
+#-------------------------------------------------------------------------------
+elif [ "$1" = "update" ]; then
+
+        # Check the number of passed arguments.
+        if [ $# -ne 2 ]; then
+                echo "$(basename $0): update <base>"
+                exit
+        fi
+
+        # Check if the base directory exists.
+        CONTAINER_BASE_NAME="$2"
+        CONTAINER_BASE_DIR="$APP_BASES_DIR/$CONTAINER_BASE_NAME"
+
+        if [ ! -d $CONTAINER_BASE_DIR ]; then
+                echo "$(basename $0): specified base does not exist."
+                exit
+        fi
+
+        # Chroot into base and update
+        systemd-nspawn --directory $CONTAINER_BASE_DIR --pipe /bin/bash << EOF
+apt-get update
+apt-get dist-upgrade -y
+apt-get clean
+EOF
+
+#-------------------------------------------------------------------------------
 # command: create <base> <container>
 #-------------------------------------------------------------------------------
 elif [ "$1" = "create" ]; then
@@ -379,6 +406,7 @@ else
                 "Commands:\n" \
                 "- list $COLOR_GRAY: lists containers and their base.$COLOR_DEFAULT\n" \
                 "- download $COLOR_GRAY: download specified base.$COLOR_DEFAULT\n" \
+                "- update $COLOR_GRAY: update a specified base.$COLOR_DEFAULT\n" \
                 "- create $COLOR_GRAY: creates an empty container of specified name.$COLOR_DEFAULT\n" \
                 "- destroy $COLOR_GRAY: destroys specified container and deletes its files.$COLOR_DEFAULT\n" \
                 "- mount $COLOR_GRAY: mounts the specified container.$COLOR_DEFAULT\n" \
