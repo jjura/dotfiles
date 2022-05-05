@@ -3,51 +3,33 @@
 - dbus
 - locales
 - linux-image-amd64
-- libvirt-clients
-- libvirt-daemon-system
 - qemu-system-x86-64
 - qemu-utils
+- openssh-server
 - systemd-sysv
-- netcat-openbsd
-- iproute2
-### Manager
-- virt-manager
-
-## NET network
-```
-virsh net-autostart default
-virsh net-start default
-```
 
 ## Boot options
 ```
-options amd_iommu=on iommu=pt video=efifb:off
+options iommu=pt amd_iommu=on video=efifb:off
+options vfio-pci.ids=<vendor>:<device>
 ```
 
-## CPU settings
+## Blacklist snd-hda-intel
 ```
-Model: host-passthrough
-Socket: 1
-Cores: 4 or 8
-Threads: 2
+blacklist snd-hda-intel
 ```
+
+## Download OVMF
+```
+apt-get -d install ovmf
+cp /var/cache/apt/archive/ovmf.deb .
+dpkg-deb -x ovmf.deb ovmf
+```
+
 ## GPU rom
 - Download GPU rom from: https://www.techpowerup.com/vgabios
 ```
 wget https://www.techpowerup.com/vgabios/212120/AMD.RX5700XT.8192.190616.rom
-
-```
-- Specify it inside VMs XML file:
-```
-<hostdev mode='subsystem' type='pci' managed='yes'>
-  <source>
-    <address domain='0x0000' bus='0x2b' slot='0x00' function='0x0'/>
-  </source>
-  ...
-  <rom file='/kvm/bios/AMD.RX5700XT.8192.190616.rom'/>
-  ...
-</hostdev>
-
 ```
 
 ## KVM AMDGPU reset fix
