@@ -12,17 +12,16 @@
 qemu-img create -f qcow2 debian-testing.qcow2 256G
 ```
 
-## qemu-system-x86_64
+## qemu-system-x86_64 for Linux
 ```
 qemu-system-x86_64 \
         -nodefaults \
         -enable-kvm \
         -cpu host,kvm=off \
         -nographic \
-        -name "Machine" \
-        -M q35 \
+        -machine pc-q35-7.0 \
         -m 8G \
-        -smp sockets=1,cores=8 \
+        -smp 16,sockets=1,cores=8,threads=2 \
         -drive if=virtio,file=/home/lucas/Disks/debian-testing.qcow2 \
         -drive if=pflash,format=raw,readonly=on,file=/home/lucas/Bios/OVMF_CODE.fd \
         -drive if=pflash,format=raw,file=/home/lucas/Bios/OVMF_VARS.fd \
@@ -32,11 +31,21 @@ qemu-system-x86_64 \
         -usb -device usb-host,vendorid=0x046d,productid=0xc52b \
         -usb -device usb-host,vendorid=0x1038,productid=0x12aa \
         -nic user,model=virtio-net-pci \
-        -vga none
-#       -cdrom /home/lucas/Images/debian-11.3.0-amd64-netinst.iso \
-#       -vnc 192.168.0.101:0 \
-#       -vga qxl \
-#       -nic user,model=e1000
+        -vga none 
+```
+
+## qemu-system-x86_64 for Windows
+1. Download virtio drivers for Windows:
+```
+https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/virtio-win.iso
+```
+2. Use additional qemu parameters to install Windows:
+```
+-drive media=cdrom,file=virtio-win.iso \
+-drive media=cdrom,file=windows-10-ltsc.iso \
+-nic user,model=e1000 \
+-vnc 192.168.0.101:0 \
+-vga qxl
 ```
 
 ## vfio-pci
@@ -76,10 +85,4 @@ dpkg-deb -x /var/cache/apt/archive/pciutils.deb pciutils
 ## snd-hda-intel
 ```
 echo "blacklist snd-hda-intel" > /etc/modprobe.d/alsa-base.conf
-```
-
-## gpu rom
-- Download GPU rom from: https://www.techpowerup.com/vgabios
-```
-wget https://www.techpowerup.com/vgabios/212120/AMD.RX5700XT.8192.190616.rom
 ```
