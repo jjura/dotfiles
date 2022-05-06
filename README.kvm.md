@@ -19,14 +19,16 @@ qemu-system-x86_64 \
         -enable-kvm \
         -cpu host,kvm=off \
         -nographic \
+        -name "Machine" \
         -M q35 \
         -m 8G \
-        -smp 8 \
+        -smp sockets=1,cores=8 \
         -drive if=virtio,file=/home/lucas/Disks/debian-testing.qcow2 \
         -drive if=pflash,format=raw,readonly=on,file=/home/lucas/Bios/OVMF_CODE.fd \
         -drive if=pflash,format=raw,file=/home/lucas/Bios/OVMF_VARS.fd \
-        -device vfio-pci,host=2b:00.0 \
-        -device vfio-pci,host=2b:00.1 \
+        -device pcie-root-port,id=pcie.1,bus=pcie.0 \
+        -device vfio-pci,host=2b:00.0,bus=pcie.1 \
+        -device vfio-pci,host=2b:00.1,bus=pcie.1 \
         -usb -device usb-host,vendorid=0x046d,productid=0xc52b \
         -usb -device usb-host,vendorid=0x1038,productid=0x12aa \
         -nic user,model=virtio-net-pci \
