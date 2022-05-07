@@ -47,6 +47,12 @@ https://fedorapeople.org/groups/virt/virtio-win/direct-downloads/stable-virtio/v
 -vnc 192.168.0.101:0 \
 -vga qxl
 ```
+3. Use additional shell commands to passthrough USB for VR headset:
+```
+echo "0000:2d:00.3"	> /sys/bus/pci/devices/0000\:2d\:00.3/driver/unbind
+echo "0x1022 0x149c" 	> /sys/bus/pci/drivers/vfio-pci/remove_id
+echo "0x1022 0x149c" 	> /sys/bus/pci/drivers/vfio-pci/new_id
+```
 
 ## vfio-pci
 ```
