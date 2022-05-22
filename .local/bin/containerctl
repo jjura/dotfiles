@@ -330,7 +330,7 @@ elif [ "$1" = "umount" ]; then
                 echo "$(basename $0): specified container does not exist."
                 exit
         fi
-        
+
         # Check if the container is mounted.
         mountpoint -q $CONTAINER_DIR/$DIR_MOUNT
 
@@ -397,6 +397,7 @@ elif [ "$1" = "boot" ]; then
                 --bind /dev/snd \
                 --bind /dev/bus/usb \
                 --bind-ro /tmp/.X11-unix/X0 \
+                --property DeviceAllow="char-drm rwm" \
                 --property DeviceAllow="char-alsa rwm" \
                 --property DeviceAllow="char-usb_device rwm" \
                 --directory $CONTAINER_DIR/$DIR_MOUNT \
