@@ -278,14 +278,15 @@ elif [ "$1" = "destroy" ]; then
 elif [ "$1" = "mount" ]; then
 
         # Check the number of passed arguments.
-        if [ $# -ne 2 ]; then
-                echo "$(basename $0): mount <container>"
+        if [ $# -lt 2 ]; then
+                echo "$(basename $0): mount <container> [mounts]"
                 exit
         fi
 
         # Check if the container directory exists.
         CONTAINER_NAME="$2"
         CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
+        CONTAINER_MOUNTS="$CONTAINER_DIR/$DIR_MOUNT/mnt"
 
         if [ ! -d $CONTAINER_DIR ]; then
                 echo "$(basename $0): specified container does not exist."
@@ -304,6 +305,24 @@ elif [ "$1" = "mount" ]; then
         mount -t overlay overlay \
               -o lowerdir=$CONTAINER_DIR/$DIR_BASE,upperdir=$CONTAINER_DIR/$DIR_ROOTFS,workdir=$CONTAINER_DIR/$DIR_WORK \
               $CONTAINER_DIR/$DIR_MOUNT
+
+        # Mount the additional directories.
+        for DIRECTORY in ${@:3}; do
+            if [ ! -d $DIRECTORY ]; then
+                echo "$(basename $0): $(basename $DIRECTORY) does not exist. Skipping..."
+                continue
+            fi
+
+            if [ -d $CONTAINER_MOUNTS/$(basename $DIRECTORY) ]; then
+                echo "$(basename $0): $(basename $DIRECTORY) already created. Skipping..."
+                continue
+            fi
+
+            mkdir -p $CONTAINER_MOUNTS/$(basename $DIRECTORY)
+            mount -o bind $DIRECTORY $CONTAINER_MOUNTS/$(basename $DIRECTORY)
+
+            echo "$(basename $0): $(basename $DIRECTORY) mounted."
+        done
 
         # Enable remote access to the window server.
         xhost +local: > /dev/null
@@ -325,6 +344,7 @@ elif [ "$1" = "umount" ]; then
         # Check if the container directory exists.
         CONTAINER_NAME="$2"
         CONTAINER_DIR="$APP_CONTAINERS_DIR/$CONTAINER_NAME"
+        CONTAINER_MOUNTS="$CONTAINER_DIR/$DIR_MOUNT/mnt"
 
         if [ ! -d $CONTAINER_DIR ]; then
                 echo "$(basename $0): specified container does not exist."
@@ -346,6 +366,18 @@ elif [ "$1" = "umount" ]; then
                 echo "$(basename $0): specified container is booted up."
                 exit
         fi
+
+        # Umount the additional mounts.
+        for DIRECTORY in $(find $CONTAINER_MOUNTS -mindepth 1 -maxdepth 1 -type d); do
+            mountpoint -q $DIRECTORY
+
+            if [ $? -eq 0 ]; then
+                umount $DIRECTORY
+                rm -rf $DIRECTORY
+
+                echo "$(basename $0): $(basename $DIRECTORY) unmounted."
+            fi
+        done
 
         # Umount the container.
         umount -R $CONTAINER_DIR/$DIR_MOUNT
