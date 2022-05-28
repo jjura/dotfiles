@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Directory to be set by user.
-APP_DIR="/home/$SUDO_USER/Machines"
+APP_DIR="/usr/local/share/containerctl"
 
 # Container structure.
 DIR_ROOTFS="rootfs"
