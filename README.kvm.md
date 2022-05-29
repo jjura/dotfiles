@@ -92,3 +92,24 @@ dpkg-deb -x /var/cache/apt/archive/pciutils.deb pciutils
 ```
 echo "blacklist snd-hda-intel" > /etc/modprobe.d/alsa-base.conf
 ```
+
+## systemd-nspawn for qemu
+```
+# Release the USB controller.
+echo "device_specific"  > /sys/bus/pci/devices/0000\:2b\:00.0/reset_method
+echo "0000:2d:00.3"     > /sys/bus/pci/devices/0000\:2d\:00.3/driver/unbind
+echo "0x1022 0x149c"    > /sys/bus/pci/drivers/vfio-pci/remove_id
+echo "0x1022 0x149c"    > /sys/bus/pci/drivers/vfio-pci/new_id
+
+# Boot the container.
+nohup systemd-nspawn \
+        --boot \
+        --capability=all \
+        --bind /dev/kvm \
+        --bind /dev/vfio/vfio \
+        --bind /dev/vfio/18 \
+        --bind /dev/vfio/19 \
+        --bind /dev/vfio/23 \
+        --directory $CONTAINER_DIR/$DIR_MOUNT \
+        --machine $CONTAINER_NAME &> /dev/null &
+```
