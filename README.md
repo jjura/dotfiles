@@ -173,6 +173,30 @@ dpkg-reconfigure fontconfig-config
 dpkg-reconfigure fontconfig
 ```
 
+## Icon theme configuration
+```
+mkdir -p ~/.local/share/mime/packages
+mkdir -p ~/.local/share/icons
+
+apt-get install --no-install-recommends -d adwaita-icon-theme
+
+cp -r adwaita-icon-theme/usr/share/icons/* ~/.local/share/icons/
+cp adwaita-icon-theme/usr/share/mime/packages/* ~/.local/share/mime/packages/
+
+update-icon-caches ~/.local/share/icons
+update-mime-database ~/.local/share/mime
+```
+
+## Glib scheme configuration
+```
+mkdir -p ~/.local/share/glib-2.0/schemas
+
+apt-get install --no-install-recommends -d libgtk-3-common
+cp libgtk-3-common/usr/share/glib-2.0/schemes/* ~/.local/share/glib-2.0/schemes/
+
+glib-compile-schemas ~/.local/share/glib-2.0/schemes
+```
+
 ## Spotify, Discord, Teams
 ```
 #!/bin/sh
