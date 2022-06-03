@@ -171,7 +171,11 @@ ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 dpkg-reconfigure fontconfig-config
 dpkg-reconfigure fontconfig
 ```
-
+## XDG configuration
+```
+- info_generic tries to call /usr/bin/file instead of local file.
+- ~/.local/bin/file must be called with -m parameter pointing to the magic file.
+```
 ## Icon theme configuration
 ```
 mkdir -p ~/.local/share/mime/packages
