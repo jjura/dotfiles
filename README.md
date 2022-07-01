@@ -173,7 +173,7 @@ dpkg-reconfigure fontconfig
 ```
 ## XDG configuration
 ```
-- info_generic tries to call /usr/bin/file instead of local file.
+- info_generic inside xdg-mime tries to call /usr/bin/file instead of local file.
 - ~/.local/bin/file must be called with -m parameter pointing to the magic file.
 ```
 ## Icon theme configuration
@@ -186,8 +186,9 @@ apt-get install --no-install-recommends -d adwaita-icon-theme
 cp -r adwaita-icon-theme/usr/share/icons/* ~/.local/share/icons/
 cp adwaita-icon-theme/usr/share/mime/packages/* ~/.local/share/mime/packages/
 
-update-icon-caches ~/.local/share/icons
 update-mime-database ~/.local/share/mime
+
+ln -s ~/.local/share/icons/<theme>/cursors ~/.icons/defaults/cursors
 ```
 
 ## Glib scheme configuration
@@ -197,7 +198,7 @@ mkdir -p ~/.local/share/glib-2.0/schemas
 apt-get install --no-install-recommends -d libgtk-3-common
 cp libgtk-3-common/usr/share/glib-2.0/schemes/* ~/.local/share/glib-2.0/schemes/
 
-glib-compile-schemas ~/.local/share/glib-2.0/schemes
+/usr/lib/x86_64-linux-gnu/glib-2.0/glib-compile-schemas ~/.local/share/glib-2.0/schemes
 ```
 
 ## Spotify, Discord, Teams
