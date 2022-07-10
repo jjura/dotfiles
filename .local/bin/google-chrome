@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$HOME/.local/opt/google-chrome/usr/lib/x86_64-linux-gnu:$HOME/.local/opt/google-chrome/lib/x86_64-linux-gnu
+
+exec $HOME/.local/opt/google-chrome/opt/google/chrome/google-chrome --enable-features=VaapiVideoDecoder "$@"

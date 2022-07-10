@@ -1,30 +1,30 @@
 ## Packages
 ### System
-- systemd-sysv
-- systemd-container
 - linux-image-amd64
+- systemd-sysv
+- systemd-boot
 - xserver-xorg-core
 - xserver-xorg-input-libinput
+- xserver-xorg-video-amdgpu
 - x11-xserver-utils
-- fonts-liberation2
 - xinit
-- dbus
-- locales
+- firmware-amd-graphics
+- fonts-liberation2
 - alsa-utils
-- xdg-utils
-- file
+- locales
+- dbus
 - sudo
 ### wifi and bluetooth
 - firmware-iwlwifi
 - wpasupplicant
 - bluez
-### amd
-- firmware-amd-graphics
-- xserver-xorg-video-amdgpu
 ### dwm
 - libxft-dev
 - libxinerama-dev
 ### chrome
+```
+wget --no-check-certificate https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+```
 - libgtk-3-0
 - libnss3
 - libx11-xcb1
@@ -57,7 +57,10 @@ mkfs.ext4 /dev/nvme0n1p3
 ## Root filesystem
 ```
 mount -t ext4 /dev/nvme0n1p2 /mnt
-mkdir -p /mnt/{boot,home}
+
+mkdir -p /mnt/boot
+mkdir -p /mnt/home
+
 mount -t ext4 /dev/nvme0n1p3 /mnt/home
 mount -t vfat /dev/nvme0n1p1 /mnt/boot
 
@@ -140,12 +143,24 @@ systemctl enable systemd-resolved.service
 
 ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 
-/etc/systemd/network/20-wired.network:
+/etc/systemd/network/br0.netdev:
+    [NetDev]
+    Name=br0
+    Kind=bridge
+
+/etc/systemd/network/br0.network:
+    [Match]
+    Name=br0
+
+    [Network]
+    DHCP=ipv4
+
+/etc/systemd/network/enp37s0.network:
     [Match]
     Name=enp37s0
 
     [Network]
-    DHCP=yes
+    Bridge=br0
 ```
 
 ## Wireless network
@@ -158,12 +173,12 @@ systemctl enable wpa_supplicant@wlp0s20f3.service
 
 ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 
-/etc/systemd/network/21-wireless.network:
+/etc/systemd/network/wlp0s20f3.network:
     [Match]
     Name=wlp0s20f3
 
     [Network]
-    DHCP=yes
+    Bridge=br0
 ```
 
 ## Font configuration
@@ -171,11 +186,13 @@ ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
 dpkg-reconfigure fontconfig-config
 dpkg-reconfigure fontconfig
 ```
+
 ## XDG configuration
 ```
-- info_generic inside xdg-mime tries to call /usr/bin/file instead of local file.
-- ~/.local/bin/file must be called with -m parameter pointing to the magic file.
+- Change path to 'file' inside xdg-mime.
+- Download and extract xdg-utils and file packages into $HOME/.local/opt/xdg.
 ```
+
 ## Icon theme configuration
 ```
 mkdir -p ~/.local/share/mime/packages
@@ -201,7 +218,7 @@ cp libgtk-3-common/usr/share/glib-2.0/schemes/* ~/.local/share/glib-2.0/schemes/
 /usr/lib/x86_64-linux-gnu/glib-2.0/glib-compile-schemas ~/.local/share/glib-2.0/schemes
 ```
 
-## Spotify, Discord, Teams
+## Spotify, Teams
 ```
 #!/bin/sh
 

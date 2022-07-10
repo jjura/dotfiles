@@ -1,6 +1,6 @@
 #!/bin/bash
 
 while true; do
-    xsetroot -name " $(date +%d\ %B\ %Y,\ %H:%M) "
-    sleep 1m;
+    xsetroot -name " $(date +%H:%M) "
+    sleep 1m
 done

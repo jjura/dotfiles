@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$HOME/.local/opt/xdg/usr/lib/x86_64-linux-gnu
+
+exec $HOME/.local/opt/xdg/usr/bin/file -m $HOME/.local/opt/xdg/usr/lib/file/magic.mgc "$@"

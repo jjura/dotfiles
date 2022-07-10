@@ -1,9 +1,0 @@
-#!/bin/bash
-
-COMMAND="sudo containerctl mount $1; sleep 1; \
-    sudo containerctl boot $1; sleep 1; \
-    sudo machinectl login $1; \
-    sudo machinectl poweroff $1; sleep 1; \
-    sudo containerctl umount $1;"
-
-st -e bash -c "$COMMAND"

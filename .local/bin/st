@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$HOME/.local/opt/dwm/usr/lib/x86_64-linux-gnu
+
+exec $HOME/.local/opt/dwm/usr/bin/st "$@"

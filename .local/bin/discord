@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$HOME/.local/opt/discord/usr/lib/x86_64-linux-gnu/apulse:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$HOME/.local/opt/discord/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$HOME/.local/opt/discord/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+
+exec $HOME/.local/opt/discord/usr/bin/apulse $HOME/.local/opt/discord/usr/bin/discord "$@"

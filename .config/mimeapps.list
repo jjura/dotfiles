@@ -6,7 +6,6 @@ text/x-c=neovim.desktop
 text/x-diff=neovim.desktop
 text/x-makefile=neovim.desktop
 text/x-shellscript=neovim.desktop
-
-x-scheme-handler/http=chrome.desktop
-x-scheme-handler/https=chrome.desktop
-text/html=chrome.desktop
+text/html=google-chrome.desktop
+x-scheme-handler/http=google-chrome.desktop
+x-scheme-handler/https=google-chrome.desktop
