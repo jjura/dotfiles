@@ -1,0 +1,19 @@
+#!/bin/bash
+
+BIN="$HOME/.local/bin/sandbox-spawn"
+DIR="$HOME/.local/share/sandbox"
+DIR_CONTAINERS="$DIR/containers"
+
+CONTAINERS_LIST=$(ls $DIR_CONTAINERS)
+CONTAINERS_AMOUNT=$(echo "$CONTAINERS_LIST" | wc -l)
+
+CONTAINER=$(echo "$CONTAINERS_LIST" | dmenu -l $CONTAINERS_AMOUNT)
+
+if [ ! -z $CONTAINER ]; then
+        COMMAND="sudo $BIN \
+                --container-mount $CONTAINER \
+                --container-boot $CONTAINER \
+                --container-umount $CONTAINER"
+
+        st -e bash -c "$COMMAND"
+fi

@@ -1,0 +1,342 @@
+#!/bin/bash
+
+#-------------------------------------------------------------------------------
+# Settings
+#-------------------------------------------------------------------------------
+DIR="/home/$SUDO_USER/.local/share/sandbox"
+
+#-------------------------------------------------------------------------------
+# Global variables
+#-------------------------------------------------------------------------------
+EXECUTABLE="$DIR/sandbox"
+
+DIR_TOOLS="$DIR/tools"
+DIR_BASES="$DIR/bases"
+DIR_CONTAINERS="$DIR/containers"
+
+SCRIPT="$(basename $0)"
+
+#-------------------------------------------------------------------------------
+# Function: tools_download <packages>
+#-------------------------------------------------------------------------------
+function tools_download
+{
+        if [ $# -lt 1 ]; then
+                echo "$SCRIPT: tools-download <package> [package...]"
+                exit
+        fi
+
+        TOOLS_CACHE_DIR="$DIR_TOOLS/.cache"
+        TOOLS_CACHE_ARCHIVES_DIR="$TOOLS_CACHE_DIR/archives"
+        TOOLS_PACKAGES="$@"
+
+        mkdir -p \
+                $TOOLS_CACHE_DIR \
+                $TOOLS_CACHE_ARCHIVES_DIR
+
+        for PACKAGE in $TOOLS_PACKAGES; do
+                apt-get install \
+                        -o Dir::Cache=$TOOLS_CACHE_DIR \
+                        -o Dir::Cache::Archives=$TOOLS_CACHE_ARCHIVES_DIR \
+                        -d -y --no-install-recommends $PACKAGE > /dev/null
+
+                for ARCHIVE in $(ls $TOOLS_CACHE_ARCHIVES_DIR/*.deb); do
+                        dpkg-deb -x $ARCHIVE $DIR_TOOLS/$PACKAGE
+                done
+
+                apt-get clean
+        done
+
+        rm -rf $TOOLS_CACHE_ARCHIVES_DIR
+        rm -rf $TOOLS_CACHE_DIR
+}
+
+#-------------------------------------------------------------------------------
+# Function: base_create <distro> <release>
+#-------------------------------------------------------------------------------
+function base_create
+{
+        if [ $# -ne 2 ]; then
+                echo "$SCRIPT: base-create <distro> <release>"
+                exit
+        fi
+
+        BASE_DISTRO="$1"
+        BASE_RELEASE="$2"
+        BASE_DIR="$DIR_BASES/$BASE_DISTRO-$BASE_RELEASE"
+
+        if [ -d $BASE_DIR ]; then
+                echo "$SCRIPT: base '$(basename $BASE_DIR)' already exists."
+                return
+        fi
+        
+        BASE_ARCH="amd64"
+        BASE_VARIANT="minbase"
+        BASE_PACKAGES="dbus"
+
+        if [ $BASE_DISTRO = "debian" ]; then
+                BASE_URL="http://deb.debian.org/debian"
+        else
+                echo "$SCRIPT: distro '$BASE_DISTRO' is not supported."
+                return
+        fi
+
+        TOOLS_DEBOOTSTRAP_PATH="$DIR_TOOLS/debootstrap/usr/bin"
+        TOOLS_DEBOOTSTRAP_BIN="$DIR_TOOLS/debootstrap/usr/sbin/debootstrap"
+        TOOLS_DEBOOTSTRAP_DIR="$DIR_TOOLS/debootstrap/usr/share/debootstrap"
+        TOOLS_DEBOOTSTRAP_LD="$DIR_TOOLS/debootstrap/usr/lib/x86_64-linux-gnu"
+
+        DEBOOTSTRAP_DIR=$TOOLS_DEBOOTSTRAP_DIR \
+        LD_LIBRARY_PATH=$TOOLS_DEBOOTSTRAP_LD \
+        PATH=$TOOLS_DEBOOTSTRAP_PATH:$PATH \
+                $TOOLS_DEBOOTSTRAP_BIN \
+                        --arch $BASE_ARCH \
+                        --variant $BASE_VARIANT \
+                        --include $BASE_PACKAGES \
+                        $BASE_RELEASE $BASE_DIR $BASE_URL
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_create <name> <base>
+#-------------------------------------------------------------------------------
+function container_create
+{
+        if [ $# -ne 2 ]; then
+                echo "$SCRIPT: container-create <name> <base>"
+                exit
+        fi
+
+        CONTAINER_NAME="$1"
+        CONTAINER_BASE="$2"
+        CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
+
+        if [ -d $CONTAINER_DIR ]; then
+                echo "$SCRIPT: container '$CONTAINER_NAME' already exists."
+                return
+        fi
+
+        CONTAINER_BASE_DIR="$DIR_BASES/$CONTAINER_BASE"
+
+        if [ ! -d $CONTAINER_BASE_DIR ]; then
+                echo "$SCRIPT: base '$CONTAINER_BASE' does not exist."
+                return
+        fi
+
+        CONTAINER_ROOTFS_DIR="$CONTAINER_DIR/rootfs"
+        CONTAINER_WORK_DIR="$CONTAINER_DIR/work"
+        CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
+
+        mkdir -p \
+                $CONTAINER_ROOTFS_DIR \
+                $CONTAINER_WORK_DIR \
+                $CONTAINER_MOUNT_DIR
+
+        CONTAINER_BASE_LINK="$CONTAINER_DIR/base"
+
+        ln -s $CONTAINER_BASE_DIR $CONTAINER_BASE_LINK
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_destroy <name>
+#-------------------------------------------------------------------------------
+function container_destroy
+{
+        if [ $# -ne 1 ]; then
+                echo "$BIN: container-destroy <name>"
+                exit
+        fi
+
+        CONTAINER_NAME="$1"
+        CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
+        CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                return
+        fi
+        
+        mountpoint -q $CONTAINER_MOUNT_DIR
+
+        if [ $? -eq 0 ]; then
+                echo "$BIN: container '$CONTAINER_NAME' is mounted."
+                return
+        fi
+
+        rm -rf $CONTAINER_DIR
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_mount <name>
+#-------------------------------------------------------------------------------
+function container_mount
+{
+        if [ $# -ne 1 ]; then
+                echo "$BIN: container-mount <name>"
+                exit
+        fi
+
+        CONTAINER_NAME="$1"
+        CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                return
+        fi
+
+        CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+
+        if [ $? -eq 0 ]; then
+                echo "$BIN: container '$CONTAINER_NAME' already mounted."
+                return
+        fi
+
+        CONTAINER_BASE_DIR="$CONTAINER_DIR/base"
+        CONTAINER_ROOTFS_DIR="$CONTAINER_DIR/rootfs"
+        CONTAINER_WORK_DIR="$CONTAINER_DIR/work"
+
+        mount -t overlay overlay -o \
+                lowerdir=$CONTAINER_BASE_DIR,upperdir=$CONTAINER_ROOTFS_DIR,workdir=$CONTAINER_WORK_DIR \
+                $CONTAINER_MOUNT_DIR
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_umount <name>
+#-------------------------------------------------------------------------------
+function container_umount
+{
+        if [ $# -ne 1 ]; then
+                echo "$BIN: container-umount <name>"
+                exit
+        fi
+
+        CONTAINER_NAME="$1"
+        CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
+        CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                return
+        fi
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+
+        if [ $? -ne 0 ]; then
+                echo "$BIN: container '$CONTAINER_NAME' already unmounted."
+                return
+        fi
+
+        umount -R $CONTAINER_MOUNT_DIR
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_boot <name>
+#-------------------------------------------------------------------------------
+function container_boot
+{
+        if [ $# -ne 1 ]; then
+                echo "$BIN: container-boot <name>"
+                exit
+        fi
+
+        CONTAINER_NAME="$1"
+        CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
+        CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                return
+        fi
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+
+        if [ $? -ne 0 ]; then
+                echo "$BIN: container '$CONTAINER_NAME' is not mounted."
+                return
+        fi
+
+        xhost +local: &> /dev/null
+
+        TOOLS_IPROUTE_PATH="$DIR_TOOLS/iproute2/bin"
+        TOOLS_IPROUTE_LD="$DIR_TOOLS/iproute2/usr/lib/x86_64-linux-gnu"
+
+        LD_LIBRARY_PATH=$TOOLS_IPROUTE_LD \
+        PATH=$TOOLS_IPROUTE_PATH:$PATH \
+                $EXECUTABLE \
+                        --executable /bin/login \
+                        --binding /dev/dri \
+                        --binding /dev/snd \
+                        --binding /dev/shm \
+                        --binding /tmp/.X11-unix \
+                        --directory $CONTAINER_MOUNT_DIR \
+                        --network "192.168.0.200:192.168.0.1"
+}
+
+#-------------------------------------------------------------------------------
+# Function: main <arguments>
+#-------------------------------------------------------------------------------
+function main
+{
+        if [ -z $SUDO_USER ] || [ $(id -u) -ne 0 ]; then
+                echo "$SCRIPT: must be called as a sudo user."
+                exit
+        fi
+
+        TOOLS_PACKAGES="debootstrap iproute2"
+
+        if [ ! -d $DIR_TOOLS ]; then
+                tools_download $TOOLS_PACKAGES
+        fi
+
+        COMMAND="$1"
+        COMMAND_ARGUMENTS=(${@:2})
+        COMMAND_ARGUMENTS_COUNT=$#
+
+        while [ $COMMAND_ARGUMENTS_COUNT -gt 0 ]; do
+                case $1 in
+                        "--base-create")
+                                base_create \
+                                        ${COMMAND_ARGUMENTS[0]} \
+                                        ${COMMAND_ARGUMENTS[1]}
+                                shift 3;;
+
+                        "--container-create")
+                                container_create \
+                                        ${COMMAND_ARGUMENTS[0]} \
+                                        ${COMMAND_ARGUMENTS[1]}
+                                shift 3;;
+                        
+                        "--container-destroy")
+                                container_destroy \
+                                        ${COMMAND_ARGUMENTS[0]}
+                                shift 2;;
+
+                        "--container-mount")
+                                container_mount \
+                                        ${COMMAND_ARGUMENTS[0]}
+                                shift 2;;
+
+                        "--container-umount")
+                                container_umount \
+                                        ${COMMAND_ARGUMENTS[0]}
+                                shift 2;;
+
+                       "--container-boot")
+                                container_boot \
+                                        ${COMMAND_ARGUMENTS[0]}
+                                shift 2;;
+
+                        *)
+                                echo "$SCRIPT: unknown command '$COMMAND'"
+                                shift
+                                ;;
+                esac
+
+                COMMAND="$1"
+                COMMAND_ARGUMENTS=(${@:2})
+                COMMAND_ARGUMENTS_COUNT=$#
+        done
+}
+
+main "$@"
