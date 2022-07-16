@@ -8,13 +8,11 @@ DIR="/home/$SUDO_USER/.local/share/sandbox"
 #-------------------------------------------------------------------------------
 # Global variables
 #-------------------------------------------------------------------------------
-EXECUTABLE="$DIR/sandbox"
-
 DIR_TOOLS="$DIR/tools"
 DIR_BASES="$DIR/bases"
 DIR_CONTAINERS="$DIR/containers"
 
-SCRIPT="$(basename $0)"
+BIN="$DIR/sandbox"
 
 #-------------------------------------------------------------------------------
 # Function: tools_download <packages>
@@ -22,7 +20,7 @@ SCRIPT="$(basename $0)"
 function tools_download
 {
         if [ $# -lt 1 ]; then
-                echo "$SCRIPT: tools-download <package> [package...]"
+                echo "$(basename $0): tools-download <package> [package...]"
                 exit
         fi
 
@@ -57,7 +55,7 @@ function tools_download
 function base_create
 {
         if [ $# -ne 2 ]; then
-                echo "$SCRIPT: base-create <distro> <release>"
+                echo "$(basename $0): base-create <distro> <release>"
                 exit
         fi
 
@@ -66,7 +64,7 @@ function base_create
         BASE_DIR="$DIR_BASES/$BASE_DISTRO-$BASE_RELEASE"
 
         if [ -d $BASE_DIR ]; then
-                echo "$SCRIPT: base '$(basename $BASE_DIR)' already exists."
+                echo "$(basename $0): base '$(basename $BASE_DIR)' already exists."
                 return
         fi
         
@@ -77,7 +75,7 @@ function base_create
         if [ $BASE_DISTRO = "debian" ]; then
                 BASE_URL="http://deb.debian.org/debian"
         else
-                echo "$SCRIPT: distro '$BASE_DISTRO' is not supported."
+                echo "$(basename $0): distro '$BASE_DISTRO' is not supported."
                 return
         fi
 
@@ -102,7 +100,7 @@ function base_create
 function container_create
 {
         if [ $# -ne 2 ]; then
-                echo "$SCRIPT: container-create <name> <base>"
+                echo "$(basename $0): container-create <name> <base>"
                 exit
         fi
 
@@ -111,14 +109,14 @@ function container_create
         CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
 
         if [ -d $CONTAINER_DIR ]; then
-                echo "$SCRIPT: container '$CONTAINER_NAME' already exists."
+                echo "$(basename $0): container '$CONTAINER_NAME' already exists."
                 return
         fi
 
         CONTAINER_BASE_DIR="$DIR_BASES/$CONTAINER_BASE"
 
         if [ ! -d $CONTAINER_BASE_DIR ]; then
-                echo "$SCRIPT: base '$CONTAINER_BASE' does not exist."
+                echo "$(basename $0): base '$CONTAINER_BASE' does not exist."
                 return
         fi
 
@@ -142,7 +140,7 @@ function container_create
 function container_destroy
 {
         if [ $# -ne 1 ]; then
-                echo "$BIN: container-destroy <name>"
+                echo "$(basename $0): container-destroy <name>"
                 exit
         fi
 
@@ -151,14 +149,14 @@ function container_destroy
         CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
 
         if [ ! -d $CONTAINER_DIR ]; then
-                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                echo "$(basename $0): container '$CONTAINER_NAME' does not exist."
                 return
         fi
         
         mountpoint -q $CONTAINER_MOUNT_DIR
 
         if [ $? -eq 0 ]; then
-                echo "$BIN: container '$CONTAINER_NAME' is mounted."
+                echo "$(basename $0): container '$CONTAINER_NAME' is mounted."
                 return
         fi
 
@@ -171,7 +169,7 @@ function container_destroy
 function container_mount
 {
         if [ $# -ne 1 ]; then
-                echo "$BIN: container-mount <name>"
+                echo "$(basename $0): container-mount <name>"
                 exit
         fi
 
@@ -179,7 +177,7 @@ function container_mount
         CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
 
         if [ ! -d $CONTAINER_DIR ]; then
-                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                echo "$(basename $0): container '$CONTAINER_NAME' does not exist."
                 return
         fi
 
@@ -188,7 +186,7 @@ function container_mount
         mountpoint -q $CONTAINER_MOUNT_DIR
 
         if [ $? -eq 0 ]; then
-                echo "$BIN: container '$CONTAINER_NAME' already mounted."
+                echo "$(basename $0): container '$CONTAINER_NAME' already mounted."
                 return
         fi
 
@@ -207,7 +205,7 @@ function container_mount
 function container_umount
 {
         if [ $# -ne 1 ]; then
-                echo "$BIN: container-umount <name>"
+                echo "$(basename $0): container-umount <name>"
                 exit
         fi
 
@@ -216,18 +214,55 @@ function container_umount
         CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
 
         if [ ! -d $CONTAINER_DIR ]; then
-                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                echo "$(basename $0): container '$CONTAINER_NAME' does not exist."
                 return
         fi
 
         mountpoint -q $CONTAINER_MOUNT_DIR
 
         if [ $? -ne 0 ]; then
-                echo "$BIN: container '$CONTAINER_NAME' already unmounted."
+                echo "$(basename $0): container '$CONTAINER_NAME' already unmounted."
                 return
         fi
 
         umount -R $CONTAINER_MOUNT_DIR
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_configure <name>
+#-------------------------------------------------------------------------------
+function container_configure
+{
+        if [ $# -ne 1 ]; then
+                echo "$(basename $0): container-configure <name>"
+                exit
+        fi
+
+        CONTAINER_NAME="$1"
+        CONTAINER_DIR="$DIR_CONTAINERS/$CONTAINER_NAME"
+        CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
+
+        if [ ! -d $CONTAINER_DIR ]; then
+                echo "$(basename $0): container '$CONTAINER_NAME' does not exist."
+                return
+        fi
+
+        mountpoint -q $CONTAINER_MOUNT_DIR
+
+        if [ $? -ne 0 ]; then
+                echo "$(basename $0): container '$CONTAINER_NAME' is not mounted."
+                return
+        fi
+
+        $BIN \
+                --directory $CONTAINER_MOUNT_DIR \
+                --executable \
+                        "echo '$CONTAINER_NAME'           >  /etc/hostname;
+                         echo '127.0.0.1 localhost'       >  /etc/hosts;
+                         echo '127.0.0.1 $CONTAINER_NAME' >> /etc/hosts;
+                         echo 'nameserver 192.168.0.1'    >  /etc/resolv.conf;
+                         echo 'TERM=xterm-256color'       >  /etc/environment;
+                         echo 'root\nroot' | passwd"
 }
 
 #-------------------------------------------------------------------------------
@@ -236,7 +271,7 @@ function container_umount
 function container_boot
 {
         if [ $# -ne 1 ]; then
-                echo "$BIN: container-boot <name>"
+                echo "$(basename $0): container-boot <name>"
                 exit
         fi
 
@@ -245,14 +280,14 @@ function container_boot
         CONTAINER_MOUNT_DIR="$CONTAINER_DIR/mount"
 
         if [ ! -d $CONTAINER_DIR ]; then
-                echo "$BIN: container '$CONTAINER_NAME' does not exist."
+                echo "$(basename $0): container '$CONTAINER_NAME' does not exist."
                 return
         fi
 
         mountpoint -q $CONTAINER_MOUNT_DIR
 
         if [ $? -ne 0 ]; then
-                echo "$BIN: container '$CONTAINER_NAME' is not mounted."
+                echo "$(basename $0): container '$CONTAINER_NAME' is not mounted."
                 return
         fi
 
@@ -263,7 +298,7 @@ function container_boot
 
         LD_LIBRARY_PATH=$TOOLS_IPROUTE_LD \
         PATH=$TOOLS_IPROUTE_PATH:$PATH \
-                $EXECUTABLE \
+                $BIN \
                         --executable /bin/login \
                         --binding /dev/dri \
                         --binding /dev/snd \
@@ -279,7 +314,7 @@ function container_boot
 function main
 {
         if [ -z $SUDO_USER ] || [ $(id -u) -ne 0 ]; then
-                echo "$SCRIPT: must be called as a sudo user."
+                echo "$(basename $0): must be called as a sudo user."
                 exit
         fi
 
@@ -306,7 +341,7 @@ function main
                                         ${COMMAND_ARGUMENTS[0]} \
                                         ${COMMAND_ARGUMENTS[1]}
                                 shift 3;;
-                        
+
                         "--container-destroy")
                                 container_destroy \
                                         ${COMMAND_ARGUMENTS[0]}
@@ -322,13 +357,18 @@ function main
                                         ${COMMAND_ARGUMENTS[0]}
                                 shift 2;;
 
-                       "--container-boot")
+                        "--container-configure")
+                                container_configure \
+                                        ${COMMAND_ARGUMENTS[0]}
+                                shift 2;;
+
+                        "--container-boot")
                                 container_boot \
                                         ${COMMAND_ARGUMENTS[0]}
                                 shift 2;;
 
                         *)
-                                echo "$SCRIPT: unknown command '$COMMAND'"
+                                echo "$(basename $0): unknown command '$COMMAND'"
                                 shift
                                 ;;
                 esac

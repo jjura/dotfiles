@@ -1,13 +1,17 @@
 #!/bin/bash
 
-BIN="$HOME/.local/bin/sandbox-spawn"
-DIR="$HOME/.local/share/sandbox"
-DIR_CONTAINERS="$DIR/containers"
+BIN="$HOME/.local/bin/sandbox-overlay"
+DIR="$HOME/.local/share/sandbox/containers"
 
-CONTAINERS_LIST=$(ls $DIR_CONTAINERS)
-CONTAINERS_AMOUNT=$(echo "$CONTAINERS_LIST" | wc -l)
+CONTAINERS=$(ls $DIR)
+CONTAINERS_AMOUNT=$(echo "$CONTAINERS" | wc -l)
 
-CONTAINER=$(echo "$CONTAINERS_LIST" | dmenu -l $CONTAINERS_AMOUNT)
+for CONTAINER in $CONTAINERS; do
+        BASE=$(basename $(readlink $DIR/$CONTAINER/base))
+        OUTPUT="${OUTPUT}$CONTAINER [ $BASE ]\n"
+done
+
+CONTAINER=$(echo -e "$OUTPUT" | dmenu -l $CONTAINERS_AMOUNT -p "Container:" | awk -F ' ' '{ print $1 }')
 
 if [ ! -z $CONTAINER ]; then
         COMMAND="sudo $BIN \
