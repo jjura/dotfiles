@@ -256,7 +256,7 @@ function container_configure
 
         $BIN \
                 --directory $CONTAINER_MOUNT_DIR \
-                --executable \
+                --command \
                         "echo '$CONTAINER_NAME'           >  /etc/hostname;
                          echo '127.0.0.1 localhost'       >  /etc/hosts;
                          echo '127.0.0.1 $CONTAINER_NAME' >> /etc/hosts;
@@ -296,16 +296,19 @@ function container_boot
         TOOLS_IPROUTE_PATH="$DIR_TOOLS/iproute2/bin"
         TOOLS_IPROUTE_LD="$DIR_TOOLS/iproute2/usr/lib/x86_64-linux-gnu"
 
-        LD_LIBRARY_PATH=$TOOLS_IPROUTE_LD \
-        PATH=$TOOLS_IPROUTE_PATH:$PATH \
+        TOOLS_NFTABLES_PATH="$DIR_TOOLS/nftables/usr/sbin"
+        TOOLS_NFTABLES_LD="$DIR_TOOLS/nftables/usr/lib/x86_64-linux-gnu"
+
+        LD_LIBRARY_PATH=$TOOLS_IPROUTE_LD:$TOOLS_NFTABLES_LD \
+        PATH=$TOOLS_IPROUTE_PATH:$TOOLS_NFTABLES_PATH:$PATH \
                 $BIN \
-                        --executable /bin/login \
+                        --command /bin/login \
                         --binding /dev/dri \
                         --binding /dev/snd \
                         --binding /dev/shm \
                         --binding /tmp/.X11-unix \
                         --directory $CONTAINER_MOUNT_DIR \
-                        --network "192.168.0.200:192.168.0.1"
+                        --masquerade "enxc025a5e42bd9"
 }
 
 #-------------------------------------------------------------------------------
@@ -318,7 +321,7 @@ function main
                 exit
         fi
 
-        TOOLS_PACKAGES="debootstrap iproute2"
+        TOOLS_PACKAGES="debootstrap iproute2 nftables"
 
         if [ ! -d $DIR_TOOLS ]; then
                 tools_download $TOOLS_PACKAGES
