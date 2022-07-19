@@ -40,9 +40,8 @@ function tools_download
 
                 for ARCHIVE in $(ls $TOOLS_CACHE_ARCHIVES_DIR/*.deb); do
                         dpkg-deb -x $ARCHIVE $DIR_TOOLS/$PACKAGE
+                        rm -rf $ARCHIVE
                 done
-
-                apt-get clean
         done
 
         rm -rf $TOOLS_CACHE_ARCHIVES_DIR

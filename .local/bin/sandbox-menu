@@ -1,23 +1,111 @@
 #!/bin/bash
 
-BIN="$HOME/.local/bin/sandbox-overlay"
-DIR="$HOME/.local/share/sandbox/containers"
+BIN="$HOME/.local/bin/sandbox-manager"
+BASES_DIR="$HOME/.local/share/sandbox/bases"
+CONTAINERS_DIR="$HOME/.local/share/sandbox/containers"
+MENU_LINES=10
 
-CONTAINERS=$(ls $DIR)
-CONTAINERS_AMOUNT=$(echo "$CONTAINERS" | wc -l)
+#-------------------------------------------------------------------------------
+# Function: container_boot
+#-------------------------------------------------------------------------------
+function container_boot
+{
+        CONTAINERS=$(ls $CONTAINERS_DIR)
+        CONTAINERS_AMOUNT=$(ls $CONTAINERS_DIR | wc -l)
 
-for CONTAINER in $CONTAINERS; do
-        BASE=$(basename $(readlink $DIR/$CONTAINER/base))
-        OUTPUT="${OUTPUT}$CONTAINER [ $BASE ]\n"
-done
+        for CONTAINER in $CONTAINERS; do
+                BASE="$CONTAINERS_DIR/$CONTAINER/base"
+                BASE=$(basename $(readlink $BASE))
 
-CONTAINER=$(echo -e "$OUTPUT" | dmenu -l $CONTAINERS_AMOUNT -p "Container:" | awk -F ' ' '{ print $1 }')
+                OUTPUT="${OUTPUT}Container: $CONTAINER [ $BASE ]\n"
+        done
 
-if [ ! -z $CONTAINER ]; then
-        COMMAND="sudo $BIN \
-                --container-mount $CONTAINER \
-                --container-boot $CONTAINER \
-                --container-umount $CONTAINER"
+        CONTAINER=$(echo -e "$OUTPUT" | dmenu -l $CONTAINERS_AMOUNT -p "Boot container:")
+        CONTAINER=$(echo -e $CONTAINER | awk -F ' ' '{ print $2 }')
 
-        st -e bash -c "$COMMAND"
-fi
+        if [ ! -z $CONTAINER ]; then
+                COMMAND="sudo $BIN \
+                        --container-mount $CONTAINER \
+                        --container-boot $CONTAINER \
+                        --container-umount $CONTAINER"
+
+                st -e bash -c "$COMMAND"
+        fi
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_create
+#-------------------------------------------------------------------------------
+function container_create
+{
+        BASE=$(ls $BASES_DIR)
+        BASE=$(echo -e "$BASE" | dmenu -l $MENU_LINES -p "Container base:")
+
+        if [ ! -z $BASE ]; then
+                CONTAINER=$(echo "" | dmenu -p "Container name:");
+
+                if [ ! -z $CONTAINER ]; then
+                        COMMAND="sudo $BIN \
+                                --container-create $CONTAINER $BASE \
+                                --container-mount $CONTAINER \
+                                --container-configure $CONTAINER \
+                                --container-boot $CONTAINER \
+                                --container-umount $CONTAINER"
+
+                        st -e bash -c "$COMMAND"
+                fi
+        fi
+}
+
+#-------------------------------------------------------------------------------
+# Function: container_destroy
+#-------------------------------------------------------------------------------
+function container_destroy
+{
+        CONTAINERS=$(ls $CONTAINERS_DIR)
+        CONTAINERS_AMOUNT=$(ls $CONTAINERS_DIR | wc -l)
+
+        for CONTAINER in $CONTAINERS; do
+                BASE="$CONTAINERS_DIR/$CONTAINER/base"
+                BASE=$(basename $(readlink $BASE))
+
+                OUTPUT="${OUTPUT}Container: $CONTAINER [ $BASE ]\n"
+        done
+
+        CONTAINER=$(echo -e "$OUTPUT" | dmenu -l $CONTAINERS_AMOUNT -p "Destroy container:")
+        CONTAINER=$(echo -e $CONTAINER | awk -F ' ' '{ print $2 }')
+
+        if [ ! -z $CONTAINER ]; then
+                COMMAND="sudo $BIN \
+                        --container-umount $CONTAINER \
+                        --container-destroy $CONTAINER"
+
+                st -e bash -c "$COMMAND"
+        fi
+}
+
+#-------------------------------------------------------------------------------
+# Function: main
+#-------------------------------------------------------------------------------
+function main
+{
+        OPTION="Boot container\nCreate container\nDestroy container"
+        OPTION=$(echo -e "$OPTION" | dmenu -l $MENU_LINES -p "Sandbox")
+        OPTION=$(echo -e "$OPTION" | awk -F ' ' '{ print $1 }')
+
+        case $OPTION in
+                "Boot")
+                        container_boot
+                        ;;
+
+                "Create")
+                        container_create
+                        ;;
+
+                "Destroy")
+                        container_destroy
+                        ;;
+        esac
+}
+
+main
