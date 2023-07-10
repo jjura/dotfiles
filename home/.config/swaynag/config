@@ -1,0 +1,26 @@
+#-------------------------------------------------------------------------------
+# General:
+#-------------------------------------------------------------------------------
+border-bottom-size=1
+button-border-size=0
+button-dismiss-gap=0
+button-gap=0
+button-margin-right=0
+button-padding=12
+details-border-size=0
+edge=top
+font=local-monospace 9
+layer=bottom
+message-padding=12
+
+#-------------------------------------------------------------------------------
+# Error:
+#-------------------------------------------------------------------------------
+[error]
+background=883355
+border-bottom=bb6688
+border=000000
+button-background=883355
+button-text=ee99bb
+details-background=000000
+text=ee99bb

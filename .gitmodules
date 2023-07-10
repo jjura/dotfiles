@@ -1,0 +1,9 @@
+[submodule "home/.config/nvim/pack/plugin/start/nvim-plain-language"]
+	path = home/.config/nvim/pack/plugin/start/nvim-plain-language
+	url = https://github.com/jjura/nvim-plain-language.git
+[submodule "home/.config/nvim/pack/plugin/start/nvim-plain-line"]
+	path = home/.config/nvim/pack/plugin/start/nvim-plain-line
+	url = https://github.com/jjura/nvim-plain-line.git
+[submodule "home/.config/nvim/pack/plugin/start/nvim-plain-color"]
+	path = home/.config/nvim/pack/plugin/start/nvim-plain-color
+	url = https://github.com/jjura/nvim-plain-color.git

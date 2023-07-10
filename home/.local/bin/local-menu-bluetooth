@@ -1,0 +1,98 @@
+#!/bin/bash
+
+function device_address
+{
+    for device in "$(bluetoothctl devices)"
+    do
+        name="$(echo "$device" | cut -d " " -f 3-)"
+
+        if [ "$1" = "$name" ]
+        then
+            echo "$device" | cut -d " " -f 2
+        fi
+    done
+}
+
+function device_connected
+{
+    address="$(echo "$1" | cut -d " " -f 2)"
+
+    if [ ! -z "$address" ]
+    then
+        connected="$(bluetoothctl info "$address" | grep "Connected: $2")"
+
+        if [ ! -z "$connected" ]
+        then
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+function devices_connected
+{
+    for device in "$(bluetoothctl devices)"
+    do
+        if device_connected "$device" "$1"
+        then
+            echo "$device" | cut -d " " -f 3-
+        fi
+    done
+}
+
+function bluetooth_connect
+{
+    devices="$(devices_connected "no")"
+
+    if [ ! -z "$devices" ]
+    then
+        device="$(echo "$devices" | tofi)"
+
+        if [ ! -z "$device" ]
+        then
+            address="$(device_address "$device")"
+
+            if [ ! -z "$address" ]
+            then
+                bluetoothctl connect "$address"
+            fi
+        fi
+    fi
+}
+
+function bluetooth_disconnect
+{
+    devices="$(devices_connected "yes")"
+
+    if [ ! -z "$devices" ]
+    then
+        device="$(echo "$devices" | tofi)"
+
+        if [ ! -z "$device" ]
+        then
+            address="$(device_address "$device")"
+
+            if [ ! -z "$address" ]
+            then
+                bluetoothctl disconnect "$address"
+            fi
+        fi
+    fi
+}
+
+options="\
+Connect
+Disconnect"
+
+option="$(echo "$options" | tofi)"
+
+case "$option" in
+    "Connect")
+        bluetooth_connect
+        ;;
+
+    "Disconnect")
+        bluetooth_disconnect
+        ;;
+esac

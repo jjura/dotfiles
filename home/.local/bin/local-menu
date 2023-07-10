@@ -1,0 +1,27 @@
+#!/bin/bash
+
+options="\
+Applications
+Bluetooth
+Containers
+System"
+
+option="$(echo "$options" | tofi)"
+
+case "$option" in
+    "Applications")
+        exec tofi-drun
+        ;;
+
+    "Bluetooth")
+        exec local-menu-bluetooth
+        ;;
+
+    "Containers")
+        exec local-menu-container
+        ;;
+
+    "System")
+        exec local-menu-system
+        ;;
+esac

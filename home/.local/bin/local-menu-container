@@ -1,0 +1,24 @@
+#!/bin/bash
+
+directory="$HOME/Containers"
+
+if [ ! -d "$directory" ]
+then
+    exit
+fi
+
+container="$(ls "$directory" | tofi)"
+
+if [ -z "$container" ] || [ ! -d "$directory/$container" ]
+then
+    exit
+fi
+
+username="$(cat "$directory/$container/etc/passwd" | cut -d ":" -f1 | grep "$USER")"
+
+if [ -z "$username" ]
+then
+    username="root"
+fi
+
+alacritty --command sudo "$HOME/.local/bin/local-container" execute "$directory/$container" "su - $username"
