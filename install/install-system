@@ -1,0 +1,119 @@
+#!/bin/bash
+
+function system_configure_base
+{
+    debootstrap --variant minbase --arch amd64 stable "$mountpoint"
+}
+
+function system_configure_mountpoint
+{
+    utility_mount "proc"     "/proc"
+    utility_mount "devtmpfs" "/dev"
+    utility_mount "devpts"   "/dev/pts"
+    utility_mount "sysfs"    "/sys"
+    utility_mount "efivarfs" "/sys/firmware/efi/efivars"
+    utility_mount "tmpfs"    "/run"
+    utility_bind             "/run/dbus"
+}
+
+function system_configure_repository
+{
+	cat <<- EOF > "/etc/apt/sources.list"
+		deb http://deb.debian.org/debian stable main contrib non-free non-free-firmware
+	EOF
+}
+
+function system_configure_package
+{
+    apt-get update
+
+    apt-get install --yes --no-install-recommends \
+        "bluez"                                   \
+        "firmware-amd-graphics"                   \
+        "firmware-iwlwifi"                        \
+        "firmware-realtek"                        \
+        "gnome-control-center"                    \
+        "gnome-session"                           \
+        "gnome-shell"                             \
+        "gnome-terminal"                          \
+        "linux-image-amd64"                       \
+        "locales"                                 \
+        "sudo"                                    \
+        "systemd"                                 \
+        "systemd-boot"                            \
+        "systemd-sysv"                            \
+        "wireless-regdb"
+
+    dpkg-reconfigure --frontend teletype \
+        "locales"                        \
+        "tzdata"
+
+    apt-get clean
+}
+
+function system_configure_bootloader
+{
+    bootctl install
+
+	cat <<- EOF > "/boot/loader/entries/debian.conf"
+		title  Debian Stable
+		linux  /$(cd /boot && ls vmlinuz*)
+		initrd /$(cd /boot && ls initrd*)
+		options quiet root=UUID=$(device_configure_uuid "${device}p2") rw
+	EOF
+
+    echo "default debian" > "/boot/loader/loader.conf"
+}
+
+function system_configure_modules
+{
+    echo -e "i2c-dev" >> "/etc/modules-load.d/modules.conf"
+
+	cat <<- EOF > "/lib/udev/rules.d/60-i2c-dev.rules"
+		SUBSYSTEM=="i2c-dev", KERNEL=="i2c-[0-9]*", MODE="0666"
+	EOF
+}
+
+function system_configure_root
+{
+    echo -e "root\nroot" | passwd root
+}
+
+function system_configure_device
+{
+	cat <<- EOF > "/etc/fstab"
+		UUID=$(device_configure_uuid "${device}p1") /boot vfat defaults 0 2
+		UUID=$(device_configure_uuid "${device}p2") /     ext4 defaults 0 1
+		UUID=$(device_configure_uuid "${device}p3") /home ext4 defaults 0 2
+	EOF
+}
+
+function system_configure_hostname
+{
+	cat <<- EOF > "/etc/hosts"
+		127.0.0.1 $hostname
+		127.0.0.1 localhost
+	EOF
+
+    echo "$hostname" > "/etc/hostname"
+}
+
+function system_configure_interface
+{
+	cat <<- EOF > "/etc/systemd/network/$interface.network"
+		[Match]
+		Name=$interface
+		[Network]
+		DHCP=ipv4
+	EOF
+
+    systemctl enable systemd-networkd
+}
+
+function system_configure_username
+{
+    useradd "$username" --shell "/bin/bash" --create-home
+    usermod "$username" --groups sudo,audio,video,input --append
+
+    echo -e "$password\n$password" | passwd "$username"
+}
