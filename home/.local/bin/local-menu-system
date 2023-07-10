@@ -1,0 +1,46 @@
+#!/bin/bash
+
+options="\
+Lock
+Logout
+Reload
+Reboot
+Shutdown
+Suspend"
+
+option="$(echo "$options" | tofi)"
+
+case "$option" in
+    "Lock")
+        sleep 1s && kill -s "SIGUSR1" $(pidof "swayidle")
+        ;;
+
+    "Logout")
+        exec swaynag                                  \
+            --type error                              \
+            --message "Do you really want to logout?" \
+            --button "Logout" "swaymsg exit"
+        ;;
+
+    "Reload")
+        exec swaymsg reload
+        ;;
+
+    "Reboot")
+        exec swaynag                                  \
+            --type error                              \
+            --message "Do you really want to reboot?" \
+            --button "Reboot" "systemctl reboot"
+        ;;
+
+    "Shutdown")
+        exec swaynag                                    \
+            --type error                                \
+            --message "Do you really want to shutdown?" \
+            --button "Shutdown" "systemctl poweroff"
+        ;;
+
+    "Suspend")
+        exec systemctl suspend
+        ;;
+esac

@@ -1,0 +1,66 @@
+#!/bin/bash
+
+function config_check_file
+{
+    if [ ! -f "$config" ]
+    then
+        echo "Error: Cannot find file: $config."
+        exit
+    fi
+
+    source "$config"
+}
+
+function config_check_device
+{
+    if [ ! -b "$device" ]
+    then
+        echo "Error: Cannot find device: $device."
+        exit
+    fi
+}
+
+function config_check_hostname
+{
+    if [ -z "$hostname" ]
+    then
+        echo "Error: Cannot find hostname."
+        exit
+    fi
+}
+
+function config_check_interface
+{
+    if [ ! -e "/sys/class/net/$interface" ]
+    then
+        echo "Error: Cannot find interface: $interface."
+        exit
+    fi
+}
+
+function config_check_mountpoint
+{
+    if [ ! -d "$mountpoint" ]
+    then
+        echo "Error: Cannot find mountpoint: $mountpoint."
+        exit
+    fi
+}
+
+function config_check_password
+{
+    if [ -z "$password" ]
+    then
+        echo "Error: Cannot find password."
+        exit
+    fi
+}
+
+function config_check_username
+{
+    if [ -z "$username" ]
+    then
+        echo "Error: Cannot find username."
+        exit
+    fi
+}

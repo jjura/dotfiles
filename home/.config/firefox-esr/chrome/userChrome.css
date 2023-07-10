@@ -1,0 +1,525 @@
+/* reset */
+* {
+    appearance: unset !important;
+    background: unset !important;
+    border: unset !important;
+    border-radius: unset !important;
+    box-shadow: unset !important;
+    color: #888888 !important;
+    font-family: local-monospace !important;
+    font-size: 9pt !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    letter-spacing: unset !important;
+    line-height: unset !important;
+    margin: unset !important;
+    max-height: unset !important;
+    max-width: unset !important;
+    min-height: unset !important;
+    min-width: unset !important;
+    opacity: unset !important;
+    outline: unset !important;
+    padding: unset !important;
+    transition: unset !important;
+}
+
+box#navigator-toolbox-background * {
+    bottom: unset !important;
+    top: unset !important;
+    left: unset !important;
+    right: unset !important;
+    width: unset !important;
+    height: unset !important;
+}
+
+/* main window */
+html#main-window
+{
+    background-color: #000000 !important;
+}
+
+/* popups */
+tooltip, panel
+{
+    background-color: #000000 !important;
+    border: 1px solid #555555 !important;
+    padding: 6px !important;
+}
+
+/* menupopup */
+menupopup
+{
+    background-color: #000000 !important;
+    border: 1px solid #555555 !important;
+    border-bottom: none !important;
+}
+
+menupopup > menu
+{
+    border-bottom: 1px solid #555555 !important;
+    padding: 11px !important;
+}
+
+menupopup > menu[_moz-menuactive="true"]
+{
+    background-color: #222222 !important;
+}
+
+menupopup > menu > hbox > image
+{
+    display: none !important;
+}
+
+menupopup > menuitem
+{
+    border-bottom: 1px solid #555555 !important;
+    padding: 11px !important;
+}
+
+menupopup > menuitem > hbox > image
+{
+    display: none !important;
+}
+
+menupopup > menuitem[_moz-menuactive="true"]
+{
+    background-color: #222222 !important;
+}
+
+menupopup > menugroup > menuitem
+{
+    border-bottom: 1px solid #555555 !important;
+    border-right: 1px solid #555555 !important;
+    padding: 12px !important;
+}
+
+menupopup > menugroup > menuitem[_moz-menuactive="true"]
+{
+    background-color: #222222 !important;
+}
+
+menupopup > menugroup > menuitem:last-of-type
+{
+    border-right: none !important;
+}
+
+/* navigator */
+box#navigator-toolbox-background
+{
+    border-bottom: 1px solid #000000 !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox[inFullscreen="true"]
+{
+    display: none !important;
+}
+
+/* menu bar */
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#toolbar-menubar[inactive="true"]
+{
+    height: 0px !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#toolbar-menubar:not([inactive="true"])
+{
+    border-bottom: 1px solid #555555 !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#toolbar-menubar
+> toolbaritem#menubar-items
+> menubar#main-menubar
+> menu
+{
+    padding: 11px !important;
+}
+
+/* tabs bar */
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> hbox#tabbrowser-arrowscrollbox-periphery
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> toolbarbutton#firefox-view-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> toolbarbutton#alltabs-button
+{
+    display: none !important;
+}
+
+/* tab */
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+{
+    margin: 6px !important;
+    margin-right: 0px !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+{
+    max-width: 200px !important;
+    min-width: 76px !important;
+    transition:
+        min-width 200ms ease-out,
+        max-width 200ms ease-out !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab:not([pinned], [fadein])
+{
+    max-width: 0px !important;
+    min-width: 0px !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab:last-of-type
+{
+    margin-right: 6px !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+> stack.tab-stack
+> vbox.tab-background[selected="true"]
+{
+    background-color: #222222 !important;
+    border: 1px solid #555555 !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+> stack.tab-stack
+> hbox.tab-content
+{
+    padding: 12px !important;
+    min-width: 0px !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+> stack.tab-stack
+> vbox.tab-background
+> hbox.tab-loading-burst
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+> stack.tab-stack
+> hbox.tab-content
+> stack.tab-icon-stack
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+> stack.tab-stack
+> hbox.tab-content
+> vbox.tab-label-container
+> hbox.tab-secondary-label
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> vbox#titlebar
+> toolbar#TabsToolbar
+> hbox.toolbar-items
+> hbox#TabsToolbar-customization-target
+> tabs#tabbrowser-tabs
+> arrowscrollbox#tabbrowser-arrowscrollbox
+> tab.tabbrowser-tab
+> stack.tab-stack
+> hbox.tab-content
+> image.tab-close-button
+{
+    display: none !important;
+}
+
+/* navigation bar */
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+{
+    background-color: #222222 !important;
+    border-bottom: 1px solid #555555 !important;
+    border-top: 1px solid #555555 !important;
+    padding: 6px !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbarspring
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbarbutton#back-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbarbutton#forward-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#stop-reload-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbarbutton#save-to-pocket-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbarbutton#downloads-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbarbutton#unified-extensions-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> toolbaritem#PanelUI-button
+{
+    display: none !important;
+}
+
+/* url bar */
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#urlbar-container
+> hbox#urlbar
+{
+    background-color: #000000 !important;
+    border: 1px solid #555555 !important;
+    position: unset !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#urlbar-container
+> hbox#urlbar
+> hbox#urlbar-input-container
+{
+    padding: 11px !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#urlbar-container
+> hbox#urlbar
+> hbox#urlbar-input-container
+> box#tracking-protection-icon-container
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#urlbar-container
+> hbox#urlbar
+> hbox#urlbar-input-container
+> box#identity-box
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#urlbar-container
+> hbox#urlbar
+> hbox#urlbar-input-container
+> hbox#page-action-buttons
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#urlbar-container
+> hbox#urlbar
+> hbox#urlbar-input-container
+> image#urlbar-go-button
+{
+    display: none !important;
+}
+
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> toolbar#nav-bar
+> hbox#nav-bar-customization-target
+> toolbaritem#urlbar-container
+> hbox#urlbar
+> vbox.urlbarView
+{
+    display: none !important;
+}
+
+/* notification deck */
+box#navigator-toolbox-background
+> toolbox#navigator-toolbox
+> named-deck#tab-notification-deck
+{
+    display: none !important;
+}
+
+/* status panel */
+hbox#browser
+> vbox#appcontent
+> tabbox#tabbrowser-tabbox
+> tabpanels#tabbrowser-tabpanels
+> hbox.browserSidebarContainer
+> vbox.browserContainer
+> stack.browserStack
+> hbox#statuspanel
+{
+    background-color: #000000 !important;
+    border: 1px solid #555555 !important;
+    padding: 11px !important;
+    margin: 6px !important;
+}

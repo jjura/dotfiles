@@ -1,0 +1,18 @@
+* {
+    font-family: local-monospace !important;
+    font-size: 9pt !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    letter-spacing: initial !important;
+}
+
+@-moz-document
+    url-prefix("about:home"),
+    url-prefix("about:blank"),
+    url-prefix("about:newtab")
+{
+    body
+    {
+        background-color: #000000 !important;
+    }
+}
