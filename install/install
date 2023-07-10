@@ -1,0 +1,64 @@
+#!/bin/bash
+
+source "install-config"
+source "install-device"
+source "install-system"
+source "install-root"
+source "install-user"
+source "install-utility"
+
+function main
+{
+    config="config"
+
+    utility_check_permission
+    utility_check_package
+
+    config_check_file
+    config_check_device
+    config_check_hostname
+    config_check_interface
+    config_check_mountpoint
+    config_check_password
+    config_check_username
+
+    device_configure_partition
+    device_configure_filesystem
+    device_configure_mountpoint
+
+    system_configure_base
+    system_configure_mountpoint
+
+    utility_execute "root" system_configure_repository
+    utility_execute "root" system_configure_package
+    utility_execute "root" system_configure_bootloader
+    utility_execute "root" system_configure_root
+    utility_execute "root" system_configure_device
+    utility_execute "root" system_configure_hostname
+    utility_execute "root" system_configure_interface
+    utility_execute "root" system_configure_username
+
+    user_configure_dotfiles
+
+    utility_execute "root" root_configure_ownership
+
+    utility_execute "$username" user_configure_alacritty
+    utility_execute "$username" user_configure_firefox
+    utility_execute "$username" user_configure_fonts
+    utility_execute "$username" user_configure_gsettings
+    utility_execute "$username" user_configure_icons
+    utility_execute "$username" user_configure_mime
+    utility_execute "$username" user_configure_neovim
+    utility_execute "$username" user_configure_playerctl
+    utility_execute "$username" user_configure_pulseaudio
+    utility_execute "$username" user_configure_schemas
+    utility_execute "$username" user_configure_sway
+    utility_execute "$username" user_configure_swaylock
+    utility_execute "$username" user_configure_tofi
+    utility_execute "$username" user_configure_xwayland
+
+    utility_execute "root" root_configure_pulseaudio
+    utility_execute "root" root_configure_xwayland
+}
+
+main

@@ -1,0 +1,49 @@
+#!/bin/bash
+
+options="\
+Lock
+Logout
+Reload
+Reboot
+Shutdown
+Suspend"
+
+option="$(echo "$options" | tofi)"
+
+case "$option" in
+    "Lock")
+        exec swaylock
+        ;;
+
+    "Logout")
+        exec swaynag                                \
+            --type warning                          \
+            --message "Do you want to logout?"      \
+            --button-no-terminal "Yes" "swaymsg exit"
+        ;;
+
+    "Reload")
+        exec swaymsg reload
+        ;;
+
+    "Reboot")
+        exec swaynag                                \
+            --type warning                          \
+            --message "Do you want to reboot?"      \
+            --button-no-terminal "Yes" "systemctl reboot"
+        ;;
+
+    "Shutdown")
+        exec swaynag                                \
+            --type warning                          \
+            --message "Do you want to shutdown?"    \
+            --button-no-terminal "Yes" "systemctl poweroff"
+        ;;
+
+    "Suspend")
+        exec swaynag                                \
+            --type warning                          \
+            --message "Do you want to suspend?"     \
+            --button-no-terminal "Yes" "systemctl suspend"
+        ;;
+esac

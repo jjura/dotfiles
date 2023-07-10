@@ -1,0 +1,19 @@
+#-------------------------------------------------------------------------------
+# Exec: PulseAudio
+#-------------------------------------------------------------------------------
+exec
+{
+    pulseaudio
+}
+
+#-------------------------------------------------------------------------------
+# Exec: GSettings
+#-------------------------------------------------------------------------------
+exec
+{
+    gsettings set org.gnome.desktop.interface cursor-size 24
+    gsettings set org.gnome.desktop.interface cursor-theme "Adwaita"
+    gsettings set org.gnome.desktop.interface icon-theme "Adwaita"
+    gsettings set org.gnome.desktop.interface gtk-theme "Adwaita"
+    gsettings set org.gnome.desktop.interface font-name "user-interface 9"
+}

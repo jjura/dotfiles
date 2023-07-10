@@ -1,0 +1,28 @@
+#!/bin/bash
+
+function root_configure_ownership
+{
+    chown --recursive "$username":"$username" "/home/$username"
+}
+
+function root_configure_pulseaudio
+{
+    ln --symbolic                                                    \
+        "/home/$username/.local/opt/pulseaudio/usr/share/pulseaudio" \
+        "/usr/share/pulseaudio"
+
+    ln --symbolic                                                        \
+        "/home/$username/.local/opt/pulseaudio/usr/lib/pulse-16.1+dfsg1" \
+        "/usr/lib/pulse-16.1+dfsg1"
+}
+
+function root_configure_xwayland
+{
+    ln --symbolic                                      \
+        "/home/$username/.local/opt/xwayland/xwayland" \
+        "/usr/bin/Xwayland"
+
+    ln --symbolic                                      \
+        "/home/$username/.local/opt/xwayland/xwayland" \
+        "/usr/bin/xkbcomp"
+}

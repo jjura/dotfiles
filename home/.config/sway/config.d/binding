@@ -1,0 +1,130 @@
+#-------------------------------------------------------------------------------
+# Binding: Configuration
+#------------------------------------------------------------------------------- 
+set $mod Mod4
+
+set $key_up k
+set $key_down j
+set $key_left h
+set $key_right l
+
+#-------------------------------------------------------------------------------
+# Binding: Floating modifier
+#-------------------------------------------------------------------------------
+floating_modifier $mod normal
+
+#-------------------------------------------------------------------------------
+# Binding: Kill
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+q kill
+
+#-------------------------------------------------------------------------------
+# Binding: Focus
+#-------------------------------------------------------------------------------
+bindsym $mod+$key_left focus left
+bindsym $mod+$key_down focus down
+bindsym $mod+$key_up focus up
+bindsym $mod+$key_right focus right
+
+#-------------------------------------------------------------------------------
+# Binding: Move
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+$key_left move left
+bindsym $mod+Shift+$key_down move down
+bindsym $mod+Shift+$key_up move up
+bindsym $mod+Shift+$key_right move right
+
+#-------------------------------------------------------------------------------
+# Binding: Workspace
+#-------------------------------------------------------------------------------
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 10
+
+#-------------------------------------------------------------------------------
+# Binding: Move to workspace
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 10
+
+#-------------------------------------------------------------------------------
+# Binding: Split
+#-------------------------------------------------------------------------------
+bindsym $mod+b splith
+bindsym $mod+v splitv
+
+#-------------------------------------------------------------------------------
+# Binding: Layout
+#-------------------------------------------------------------------------------
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+#-------------------------------------------------------------------------------
+# Binding: Fullscreen
+#-------------------------------------------------------------------------------
+bindsym $mod+f fullscreen
+
+#-------------------------------------------------------------------------------
+# Binding: Floating
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+space floating toggle
+
+#-------------------------------------------------------------------------------
+# Binding: Focus
+#-------------------------------------------------------------------------------
+bindsym $mod+space focus mode_toggle
+bindsym $mod+a focus parent
+
+#-------------------------------------------------------------------------------
+# Binding: Scratchpad
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+minus move scratchpad
+bindsym $mod+minus scratchpad show
+
+#-------------------------------------------------------------------------------
+# Binding: Resize
+#-------------------------------------------------------------------------------
+bindsym $mod+r mode "resize"
+
+mode "resize"
+{
+    bindsym $key_up resize shrink height 10px
+    bindsym $key_down resize grow height 10px
+    bindsym $key_right resize grow width 10px
+    bindsym $key_left resize shrink width 10px
+    bindsym Escape mode "default"
+    bindsym Return mode "default"
+}
+
+#-------------------------------------------------------------------------------
+# Binding: Applications
+#-------------------------------------------------------------------------------
+bindsym $mod+Return exec tofi-drun
+
+#-------------------------------------------------------------------------------
+# Binding: Multimedia
+#-------------------------------------------------------------------------------
+bindsym XF86AudioMute exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+bindsym XF86AudioLowerVolume exec pactl set-sink-volume @DEFAULT_SINK@ -10%
+bindsym XF86AudioRaiseVolume exec pactl set-sink-volume @DEFAULT_SINK@ +10%
+bindsym XF86AudioMicMute exec pactl set-source-mute @DEFAULT_SOURCE@ toggle
+
+bindsym XF86AudioNext exec playerctl next
+bindsym XF86AudioPrev exec playerctl previous
+bindsym XF86AudioPlay exec playerctl play-pause

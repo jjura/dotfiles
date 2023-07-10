@@ -1,0 +1,132 @@
+#!/bin/bash
+
+function create_container_directory
+{
+    if [ -d "$directory" ] || ! mkdir --parent "$directory"
+    then
+        echo "Error: Cannot create container directory."
+        exit
+    fi
+
+    directory="$(realpath "$directory")"
+}
+
+function create_container_toolchain
+{
+    if ! local-package "$directory/debootstrap" "debootstrap"
+    then
+        echo "Error: Cannot create container toolchain."
+        exit
+    fi
+}
+
+function create_container_filesystem
+{
+    export DEBOOTSTRAP_DIR="$directory/debootstrap/usr/share/debootstrap"
+
+    if ! "$directory/debootstrap/debootstrap" --arch amd64 --variant minbase stable "$directory"
+    then
+        echo "Error: Cannot create container."
+        exit
+    fi
+}
+
+function create_container_configuration
+{
+    echo "127.0.0.1 localhost" > "$directory/etc/hosts"
+    echo "127.0.0.1 $(hostname)" >> "$directory/etc/hosts"
+
+    echo "$(basename "$directory")" > "$directory/etc/debian_chroot"
+}
+
+function create_container_password
+{
+    if ! /usr/sbin/chroot "$directory" "/bin/bash" -c 'echo -e "root\nroot" | passwd root'
+    then
+        echo "Error: Cannot configure container."
+        exit
+    fi
+}
+
+function execute_container_directory
+{
+    if [ ! -d "$directory" ]
+    then
+        echo "Error: Cannot execute container directory."
+        exit
+    fi
+
+    directory="$(realpath "$directory")"
+}
+
+function execute_container_mount
+{
+    mountpoint="$1"
+
+    if [ ! -d "$directory/$mountpoint" ]
+    then
+        mkdir --parents "$directory/$mountpoint"
+    fi
+
+    if ! mount --bind "$mountpoint" "$directory/$mountpoint"
+    then
+        echo "Error: Cannot execute container mount."
+        exit
+    fi
+}
+
+function execute_container_command
+{
+    if ! /usr/sbin/chroot "$directory" "/usr/bin/login"
+    then
+        echo "Error: Cannot execute container command."
+    fi
+}
+
+function execute_container_unmount
+{
+    mountpoint="$1"
+
+    if ! umount "$directory/$mountpoint"
+    then
+        echo "Error: Cannot execute container unmount."
+        exit
+    fi
+}
+
+function main
+{
+    option="$1"
+    directory="$2"
+
+    case "$option" in
+        create)
+            create_container_directory
+            create_container_toolchain
+            create_container_filesystem
+            create_container_configuration
+            create_container_password
+            ;;
+        execute)
+            execute_container_directory
+            execute_container_mount "/dev"
+            execute_container_mount "/proc"
+            execute_container_mount "/sys"
+            execute_container_mount "/dev/shm"
+            execute_container_mount "/dev/pts"
+            execute_container_mount "/run/user/1000"
+            execute_container_command
+            execute_container_unmount "/run/user/1000"
+            execute_container_unmount "/dev/pts"
+            execute_container_unmount "/dev/shm"
+            execute_container_unmount "/sys"
+            execute_container_unmount "/proc"
+            execute_container_unmount "/dev"
+            ;;
+        *)
+            echo "Usage: $(basename "$0") <create | execute> <directory>"
+            ;;
+    esac
+}
+
+main "$@"

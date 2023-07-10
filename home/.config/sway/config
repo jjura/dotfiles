@@ -1,0 +1,10 @@
+#-------------------------------------------------------------------------------
+# Config: Includes
+#-------------------------------------------------------------------------------
+include "config.d/color"
+include "config.d/bar"
+include "config.d/binding"
+include "config.d/client"
+include "config.d/exec"
+include "config.d/input"
+include "config.d/output"

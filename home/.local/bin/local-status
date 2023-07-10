@@ -1,0 +1,101 @@
+#!/bin/bash
+
+cpu_prev_sum=0
+cpu_prev_idle=0
+
+function prepare_output
+{
+	cat <<- EOF
+		{
+			"background": "#000000",
+			"border": "#222222",
+			"color": "#555555",
+			"full_text": " $1: <span foreground='#888888'>$2</span> ",
+			"separator": false,
+			"markup": "pango"
+		},
+	EOF
+}
+
+function read_time
+{
+    time="$(date +%H:%M)"
+}
+
+function read_date
+{
+    date="$(date +%d.%m.%Y)"
+}
+
+function read_volume
+{
+    volume="$(pactl get-sink-volume @DEFAULT_SINK@)"
+    volume="$(echo "$volume" | grep --only-matching --perl-regexp "\d+%")"
+    volume="$(echo "$volume" | head --lines 1)"
+}
+
+function read_disk_usage
+{
+    disk_usage="$(df --output="used" /)"
+    disk_usage="$(echo "$disk_usage" | awk 'NR == 2')"
+    disk_usage="$(echo "$disk_usage" | sed 's/ //g')"
+    disk_usage="$(expr $disk_usage / 1024)"
+}
+
+function read_mem_usage
+{
+    mem_total="$(cat "/proc/meminfo" | grep "MemTotal")"
+    mem_total="$(echo "$mem_total" | awk -F " " '{ print $2 }')"
+
+    mem_available="$(cat "/proc/meminfo" | grep "MemAvailable")"
+    mem_available="$(echo "$mem_available" | awk -F " " '{ print $2 }')"
+
+    mem_usage="$(expr $mem_total - $mem_available)"
+    mem_usage="$(expr $mem_usage / 1024)"
+}
+
+function read_cpu_usage
+{
+    cpu="$(head --lines 1 "/proc/stat" | tr --squeeze-repeats " ")"
+
+    cpu_sum="$(echo "$cpu" | cut --delimiter " " --fields 2-)"
+    cpu_sum="$(echo "$cpu_sum" | sed "s/ / + /g")"
+    cpu_sum="$(expr $cpu_sum)"
+
+    cpu_idle="$(echo "$cpu" | cut --delimiter " " --fields 5)"
+
+    cpu_delta_sum="$(expr $cpu_sum - $cpu_prev_sum)"
+    cpu_delta_idle="$(expr $cpu_idle - $cpu_prev_idle)"
+
+    cpu_usage="$(expr $cpu_delta_sum - $cpu_delta_idle)"
+    cpu_usage="$(expr $cpu_usage \* 100 / $cpu_delta_sum)"
+
+    cpu_prev_sum=$cpu_sum
+    cpu_prev_idle=$cpu_idle
+}
+
+echo '{ "version": 1 }'
+echo '['
+
+while true
+do
+    read_time
+    read_date
+    read_volume
+    read_disk_usage
+    read_mem_usage
+    read_cpu_usage
+
+    echo "["
+
+    prepare_output "CPU" "$cpu_usage%"
+    prepare_output "MEM" "$mem_usage MB"
+    prepare_output "DISK" "$disk_usage MB"
+    prepare_output "VOL" "$volume"
+    prepare_output "DATE" "$date"
+    prepare_output "TIME" "$time"
+
+    echo "],"
+
+    sleep 1s
+done
