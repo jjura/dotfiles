@@ -1,0 +1,49 @@
+[colors.bright]
+black   = "#4d4d4d"
+blue    = "#5ca1e6"
+cyan    = "#5ce6b8"
+green   = "#a1e65c"
+magenta = "#a15ce6"
+red     = "#e65c5c"
+yellow  = "#e68a5c"
+white   = "#cccccc"
+
+[colors.normal]
+black   = "#000000"
+blue    = "#5ca1e6"
+cyan    = "#5ce6b8"
+green   = "#a1e65c"
+magenta = "#a15ce6"
+red     = "#e65c5c"
+yellow  = "#e68a5c"
+white   = "#999999"
+
+[colors.primary]
+background = "#000000"
+foreground = "#cccccc"
+
+[font]
+size = 9
+
+[font.bold]
+family = "interface"
+style = "regular"
+
+[font.italic]
+family = "interface"
+style = "regular"
+
+[font.normal]
+family = "interface"
+style = "regular"
+
+[font.offset]
+x = 0
+y = 1
+
+[window]
+title = "Terminal"
+
+[window.padding]
+x = 8
+y = 8
