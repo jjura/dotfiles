@@ -1,0 +1,17 @@
+#!/bin/bash
+
+function root_configure_ownership
+{
+    chown --recursive "$username":"$username" "/home/$username"
+}
+
+function root_configure_xwayland
+{
+    ln --symbolic                                      \
+        "/home/$username/.local/opt/xwayland/xwayland" \
+        "/usr/bin/Xwayland"
+
+    ln --symbolic                                      \
+        "/home/$username/.local/opt/xwayland/xwayland" \
+        "/usr/bin/xkbcomp"
+}
