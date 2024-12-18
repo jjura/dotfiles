@@ -1,0 +1,78 @@
+#!/bin/bash
+
+function binding_brightness
+{
+    brightness="$(ddcutil --brief --bus 10 --sleep-multiplier 0.1 getvcp 10 \
+        | cut --delimiter " " --fields 4)"
+
+    case "$1" in
+        "down")
+            brightness="$(expr "$brightness" - 10)"
+            ;;
+
+        "up")
+            brightness="$(expr "$brightness" + 10)"
+            ;;
+    esac
+
+    if [ "$brightness" -ge 0 ] && [ "$brightness" -le 100 ]
+    then
+        for bus in 10 11
+        do
+            ddcutil --bus "$bus" --sleep-multiplier 0.1 setvcp 10 "$brightness" &
+        done
+    fi
+}
+
+function binding_player
+{
+    case "$1" in
+        "next")
+            exec playerctl next
+            ;;
+
+        "previous")
+            exec playerctl previous
+            ;;
+
+        "play")
+            exec playerctl play-pause
+            ;;
+    esac
+}
+
+function binding_volume
+{
+    case "$1" in
+        "down")
+            exec pactl set-sink-volume @DEFAULT_SINK@ -10%
+            ;;
+
+        "up")
+            exec pactl set-sink-volume @DEFAULT_SINK@ +10%
+            ;;
+
+        "mute")
+            exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+            ;;
+    esac
+}
+
+function main
+{
+    case "$1" in
+        "brightness")
+            binding_brightness "$2"
+            ;;
+
+        "player")
+            binding_player "$2"
+            ;;
+
+        "volume")
+            binding_volume "$2"
+            ;;
+    esac
+}
+
+main "$@"

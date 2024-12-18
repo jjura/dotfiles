@@ -1,0 +1,8 @@
+[Default Applications]
+application/pdf=firefox-esr.desktop
+text/plain=neovim.desktop
+text/x-file=neovim.desktop
+text/x-shellscript=neovim.desktop
+text/xml=neovim.desktop
+x-scheme-handler/http=firefox-esr.desktop
+x-scheme-handler/https=firefox-esr.desktop

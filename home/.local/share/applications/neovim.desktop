@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=Editor
+Exec=alacritty --command nvim

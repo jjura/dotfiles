@@ -1,0 +1,131 @@
+#!/bin/bash
+
+function menu
+{
+    wmenu                      \
+        -i                     \
+        -f "Terminus Medium 9" \
+        -n "#888888"           \
+        -N "#222222"           \
+        -s "#dddddd"           \
+        -S "#225577"
+}
+
+function menu_application_name
+{
+    grep "Name=" "$HOME/.local/share/applications" \
+        --recursive                                \
+        --no-filename                              \
+            | cut --delimiter "=" --fields 2       \
+            | sort                                 \
+            | menu
+}
+
+function menu_application_file
+{
+    grep "Name=$1" "$HOME/.local/share/applications" \
+        --recursive                                  \
+        --files-with-matches
+}
+
+function menu_application_command
+{
+    grep "Exec=" "$1" | cut --delimiter "=" --fields 2
+}
+
+function menu_application
+{
+    application_name="$(menu_application_name)"
+    application_file="$(menu_application_file "$application_name")"
+
+    if [ -f "$application_file" ]
+    then
+        exec $(menu_application_command "$application_file")
+    fi
+}
+
+function menu_container
+{
+    if [ -d "$HOME/Containers" ]
+    then
+        container_name="$(ls "$HOME/Containers" | menu)"
+        container_directory="$HOME/Containers/$container_name"
+
+        if [ ! -z "$container_name" ] && [ -d "$container_directory" ]
+        then
+            container_user="root"
+
+            if [ -d "$container_directory/home/$USER" ]
+            then
+                container_user="$USER"
+            fi
+
+            exec alacritty --command sudo "$HOME/.local/bin/local-container" \
+                execute "$container_directory" "su - $container_user"
+        fi
+    fi
+}
+
+function menu_system
+{
+    system="$(echo -e "Lock\nLogout\nReload\nReboot\nShutdown\nSuspend" | menu)"
+
+    case "$system" in
+        "Lock")
+            sleep 1s && kill -s SIGUSR1 $(pidof swayidle)
+            ;;
+
+        "Logout")
+            exec swaynag                                  \
+                --type error                              \
+                --message "Do you really want to logout?" \
+                --button-dismiss "Logout" "swaymsg exit"
+            ;;
+
+        "Reload")
+            exec swaymsg reload
+            ;;
+
+        "Reboot")
+            exec swaynag                                  \
+                --type error                              \
+                --message "Do you really want to reboot?" \
+                --button-dismiss "Reboot" "systemctl reboot"
+            ;;
+
+        "Shutdown")
+            exec swaynag                                    \
+                --type error                                \
+                --message "Do you really want to shutdown?" \
+                --button-dismiss "Shutdown" "systemctl poweroff"
+            ;;
+
+        "Suspend")
+            exec swaynag                                   \
+                --type error                               \
+                --message "Do you really want to suspend?" \
+                --button-dismiss "Suspend" "systemctl suspend"
+            ;;
+    esac
+}
+
+function main
+{
+    menu="$(echo -e "Applications\nContainers\nSystem" | menu)"
+
+    case "$menu" in
+        "Applications")
+            menu_application
+            ;;
+
+        "Containers")
+            menu_container
+            ;;
+
+        "System")
+            menu_system
+            ;;
+    esac
+}
+
+main
