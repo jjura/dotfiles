@@ -1,0 +1,138 @@
+#!/bin/bash
+
+function menu_application
+{
+    exec tofi-drun --prompt "Applications"
+}
+
+function menu_brightness
+{
+    brightness="$(seq 0 10 100 | tofi --prompt "Brightness")"
+
+    if [ "$brightness" -ge 0 ] && [ "$brightness" -le 100 ]
+    then
+        for bus in 10 11
+        do
+            ddcutil --bus "$bus" --sleep-multiplier 0.1 setvcp 10 "$brightness" &
+        done
+    fi
+}
+
+function menu_container
+{
+    container_directory="$HOME/Containers"
+
+    if [ ! -d "$container_directory" ]
+    then
+        exit
+    fi
+
+    container="$(ls "$container_directory" | tofi --prompt "Containers")"
+
+    if [ ! -z "$container" ] && [ -d "$container_directory/$container" ]
+    then
+        container_user="$USER"
+
+        if [ ! -d "$container_directory/$container/home/$container_user" ]
+        then
+            container_user="root"
+        fi
+
+        exec alacritty --command                    \
+            sudo "$HOME/.local/bin/local-container" \
+            execute "$container_directory/$container" "su - $container_user"
+    fi
+}
+
+function menu_setting
+{
+    setting="$(echo -e "Brightness\nVolume" | tofi --prompt "Settings")"
+
+    case "$setting" in
+        "Brightness")
+            menu_brightness
+            ;;
+
+        "Volume")
+            menu_volume
+            ;;
+    esac
+}
+
+function menu_system
+{
+    system="$(echo -e "Lock\nLogout\nReload\nReboot\nShutdown\nSuspend" | tofi --prompt "System")"
+
+    case "$system" in
+        "Lock")
+            sleep 1s && kill -s SIGUSR1 $(pidof swayidle)
+            ;;
+
+        "Logout")
+            exec swaynag                                  \
+                --type error                              \
+                --message "Do you really want to logout?" \
+                --button-dismiss "Logout" "swaymsg exit"
+            ;;
+
+        "Reload")
+            exec swaymsg reload
+            ;;
+
+        "Reboot")
+            exec swaynag                                  \
+                --type error                              \
+                --message "Do you really want to reboot?" \
+                --button-dismiss "Reboot" "systemctl reboot"
+            ;;
+
+        "Shutdown")
+            exec swaynag                                    \
+                --type error                                \
+                --message "Do you really want to shutdown?" \
+                --button-dismiss "Shutdown" "systemctl poweroff"
+            ;;
+
+        "Suspend")
+            exec swaynag                                   \
+                --type error                               \
+                --message "Do you really want to suspend?" \
+                --button-dismiss "Suspend" "systemctl suspend"
+            ;;
+    esac
+}
+
+function menu_volume
+{
+    volume="$(seq 0 10 100 | tofi --prompt "Volume")"
+
+    if [ "$volume" -ge 0 ] && [ "$volume" -le 100 ]
+    then
+        pactl set-sink-volume @DEFAULT_SINK@ "$volume%"
+    fi
+}
+
+function menu
+{
+    menu="$(echo -e "Applications\nContainers\nSettings\nSystem" | tofi --prompt "Menu")"
+
+    case "$menu" in
+        "Applications")
+            menu_application
+            ;;
+
+        "Containers")
+            menu_container
+            ;;
+
+        "Settings")
+            menu_setting
+            ;;
+
+        "System")
+            menu_system
+            ;;
+    esac
+}
+
+menu
