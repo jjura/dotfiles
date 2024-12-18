@@ -1,0 +1,132 @@
+#!/bin/bash
+
+function create_package_directory
+{
+    mkdir --parents         \
+        "$directory"        \
+        "$directory/.state" \
+        "$directory/.cache" \
+        "$directory/.archives"
+
+    directory="$(realpath "$directory")"
+}
+
+function create_package_cache
+{
+    if ! apt-get update                                      \
+        --option dir::state="$directory/.state"              \
+        --option dir::cache="$directory/.cache"              \
+        --option dir::cache::archives="$directory/.archives" \
+        --option debug::nolocking="true"
+    then
+        echo "Error: Cannot create package cache."
+        exit
+    fi
+}
+
+function create_package_archives
+{
+    if ! apt-get install                                     \
+        --download-only                                      \
+        --no-install-recommends                              \
+        --option dir::state="$directory/.state"              \
+        --option dir::cache="$directory/.cache"              \
+        --option dir::cache::archives="$directory/.archives" \
+        --option debug::nolocking="true"                     \
+        --yes $packages
+    then
+        echo "Error: Cannot create package archives."
+        exit
+    fi
+}
+
+function create_package
+{
+    for archive in "$directory/.archives/"*.deb
+    do
+        if ! dpkg-deb --extract "$archive" "$directory"
+        then
+            echo "Error: Cannot create package."
+            exit
+        fi
+    done
+}
+
+function create_package_cleanup
+{
+    rm --recursive             \
+        "$directory/.archives" \
+        "$directory/.cache"    \
+        "$directory/.state"
+}
+
+function create_script_query
+{
+    query="$1"
+
+    find "$directory" -mindepth 2 -not -type d $query                 \
+        | xargs --no-run-if-empty dirname                             \
+        | xargs --no-run-if-empty realpath --relative-to "$directory" \
+        | sort --reverse --uniq
+}
+
+function create_script_header
+{
+	cat <<- 'EOF' > "$script"
+		#!/bin/bash
+		directory="$(dirname "$(realpath "$0")")"
+	EOF
+}
+
+function create_script_executable
+{
+    echo 'export PATH="$HOME/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' >> "$script"
+
+    for entry in $(create_script_query "-executable")
+    do
+		cat <<- EOF >> "$script"
+			export PATH="\$directory/$entry:\$PATH"
+		EOF
+    done
+}
+
+function create_script_shared
+{
+    echo 'export LD_LIBRARY_PATH=""' >> "$script"
+
+    for entry in $(create_script_query "-iname *.so*")
+    do
+		cat <<- EOF >> "$script"
+			export LD_LIBRARY_PATH="\$directory/$entry:\$LD_LIBRARY_PATH"
+		EOF
+    done
+}
+
+function create_script
+{
+    echo 'exec "$(basename "$0")" "$@"' >> "$script"
+
+    chmod +x "$script"
+}
+
+function main
+{
+    directory="$1"
+    shift
+    packages="$@"
+
+    create_package_directory
+    create_package_cache
+    create_package_archives
+    create_package
+    create_package_cleanup
+
+    script="$directory/$(basename "$directory")"
+
+    create_script_header
+    create_script_executable
+    create_script_shared
+    create_script
+}
+
+main "$@"
