@@ -1,0 +1,163 @@
+#!/bin/bash
+
+function menu_application
+{
+    exec tofi-drun --prompt "Application"
+}
+
+function menu_bluetooth
+{
+    bluetooth_name="$(bluetoothctl devices Paired | cut -d " " -f 3- | tofi --prompt "Bluetooth")"
+
+    if [ ! -z "$bluetooth_name" ]
+    then
+        bluetooth_address="$(bluetoothctl devices Paired | grep "$bluetooth_name" | cut -d " " -f 2)"
+
+        if [ ! -z "$bluetooth_address" ]
+        then
+            bluetoothctl connect "$bluetooth_address"
+        fi
+    fi
+}
+
+function menu_brightness
+{
+    brightness="$(seq 0 10 100 | tofi --prompt "Brightness")"
+
+    if [ "$brightness" -ge 0 ] && [ "$brightness" -le 100 ]
+    then
+        for bus in 10 11
+        do
+            ddcutil --bus "$bus" --sleep-multiplier 0.1 setvcp 10 "$brightness" &
+        done
+    fi
+}
+
+function menu_container
+{
+    container_directory="$HOME/Containers"
+
+    if [ ! -d "$container_directory" ]
+    then
+        exit
+    fi
+
+    container="$(ls "$container_directory" | tofi --prompt "Container")"
+
+    if [ -z "$container" ] || [ ! -d "$container_directory/$container" ]
+    then
+        exit
+    fi
+
+    container_username="$USER"
+
+    if [ ! -d "$container_directory/$container/home/$container_username" ]
+    then
+        container_username="root"
+    fi
+
+    exec alacritty --command sudo "$HOME/.local/bin/local-container" execute \
+        "$container_directory/$container" "su - $container_username"
+}
+
+function menu_system
+{
+    system="$(cat <<- EOF | tofi --prompt "System"
+		Lock
+		Logout
+		Reload
+		Reboot
+		Shutdown
+		Suspend
+		EOF
+    )"
+
+    case "$system" in
+        "Lock")
+            sleep 1s && kill -s SIGUSR1 $(pidof swayidle)
+            ;;
+
+        "Logout")
+            exec swaynag                                  \
+                --type error                              \
+                --message "Do you really want to logout?" \
+                --button-dismiss "Logout" "swaymsg exit"
+            ;;
+
+        "Reload")
+            exec swaymsg reload
+            ;;
+
+        "Reboot")
+            exec swaynag                                  \
+                --type error                              \
+                --message "Do you really want to reboot?" \
+                --button-dismiss "Reboot" "systemctl reboot"
+            ;;
+
+        "Shutdown")
+            exec swaynag                                    \
+                --type error                                \
+                --message "Do you really want to shutdown?" \
+                --button-dismiss "Shutdown" "systemctl poweroff"
+            ;;
+
+        "Suspend")
+            exec swaynag                                   \
+                --type error                               \
+                --message "Do you really want to suspend?" \
+                --button-dismiss "Suspend" "systemctl suspend"
+            ;;
+    esac
+}
+
+function menu_volume
+{
+    volume="$(seq 0 10 100 | tofi --prompt "Volume")"
+
+    if [ "$volume" -ge 0 ] && [ "$volume" -le 100 ]
+    then
+        pactl set-sink-volume @DEFAULT_SINK@ "$volume%"
+    fi
+}
+
+function menu
+{
+    menu="$(cat <<- EOF | tofi --prompt "Menu"
+		Application
+		Bluetooth
+		Brightness
+		Container
+		System
+		Volume
+		EOF
+    )"
+
+    case "$menu" in
+        "Application")
+            menu_application
+            ;;
+
+        "Bluetooth")
+            menu_bluetooth
+            ;;
+
+        "Brightness")
+            menu_brightness
+            ;;
+
+        "Container")
+            menu_container
+            ;;
+
+        "System")
+            menu_system
+            ;;
+
+        "Volume")
+            menu_volume
+            ;;
+    esac
+}
+
+menu
