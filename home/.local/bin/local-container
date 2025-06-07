@@ -1,0 +1,199 @@
+#!/bin/bash
+
+function create_container_permission
+{
+    if [ $(id --user) -ne 0 ]
+    then
+        echo "Error: Cannot create container: permission."
+        exit
+    fi
+}
+
+function create_container_directory
+{
+    if [ -d "$container" ] || [ -z "$container" ]
+    then
+        echo "Error: Cannot create container: directory."
+        exit
+    fi
+
+    mkdir --parents "$container"
+
+    container="$(realpath "$container")"
+}
+
+function create_container_toolchain
+{
+    if ! local-package "$container/debootstrap" "debootstrap"
+    then
+        echo "Error: Cannot create container: toolchain."
+        exit
+    fi
+}
+
+function create_container_filesystem
+{
+    export DEBOOTSTRAP_DIR="$container/debootstrap/usr/share/debootstrap"
+
+    if ! "$container/debootstrap/debootstrap" \
+        --arch amd64                          \
+        --variant minbase stable "$container"
+    then
+        echo "Error: Cannot create container: filesystem."
+        exit
+    fi
+}
+
+function create_container_hostname
+{
+	cat <<- EOF > "$container/etc/hosts"
+		127.0.0.1 localhost
+		127.0.0.1 $(hostname)
+	EOF
+
+    echo "$(basename "$container")" > "$container/etc/debian_chroot"
+}
+
+function create_container_password
+{
+	/usr/sbin/chroot "$container" passwd <<- EOF
+		root
+		root
+	EOF
+}
+
+function execute_container_permission
+{
+    if [ $(id --user) -ne 0 ]
+    then
+        echo "Error: Cannot execute container: permission."
+        exit
+    fi
+}
+
+function execute_container_directory
+{
+    if [ ! -d "$container" ] || [ -z "$container" ]
+    then
+        echo "Error: Cannot execute container: directory."
+        exit
+    fi
+
+    container="$(realpath "$container")"
+}
+
+function execute_container_mount
+{
+    types="$1"
+    mountpoint="$2"
+    options="$3"
+
+    mkdir --parents "$container/$mountpoint"
+
+    if ! mount               \
+        --options "$options" \
+        --types "$types" "$types" "$container/$mountpoint"
+    then
+        echo "Error: Cannot execute container: mount."
+        exit
+    fi
+}
+
+function execute_container_bind
+{
+    mountpoint="$1"
+
+    mkdir --parents "$container/$mountpoint"
+
+    if ! mount --bind "$mountpoint" "$container/$mountpoint"
+    then
+        echo "Error: Cannot execute container: bind."
+        exit
+    fi
+}
+
+function execute_container_command
+{
+    if [ -z "$commandline" ]
+    then
+        commandline="bash"
+    fi
+
+    if ! /usr/sbin/chroot "$container" bash -c "$commandline"
+    then
+        echo "Error: Cannot execute container: command."
+    fi
+}
+
+function execute_container_unmount
+{
+    mountpoint="$1"
+
+    if ! umount "$container/$mountpoint"
+    then
+        echo "Error: Cannot execute container: unmount."
+    fi
+}
+
+function execute_container_unshare
+{
+    if ! unshare --pid --mount --fork -- "$0" "$operation" "$container" "$commandline"
+    then
+        echo "Error: Cannot execute container: unshare."
+    fi
+}
+
+function main
+{
+    case "$operation" in
+        "create")
+            create_container_permission
+            create_container_directory
+            create_container_toolchain
+            create_container_filesystem
+            create_container_hostname
+            create_container_password
+            ;;
+        "execute")
+            if [ $$ -eq 1 ]
+            then
+                execute_container_permission
+                execute_container_directory
+                execute_container_mount "devtmpfs" "/dev"
+                execute_container_mount "devpts"   "/dev/pts"
+                execute_container_mount "tmpfs"    "/dev/shm"
+                execute_container_mount "tmpfs"    "/run"
+                execute_container_mount "tmpfs"    "/run/user/1000" "mode=700,uid=1000,gid=1000"
+                execute_container_mount "tmpfs"    "/tmp"
+                execute_container_mount "sysfs"    "/sys"
+                execute_container_mount "proc"     "/proc"
+                execute_container_bind "/var/lib/dbus"
+                execute_container_command
+                execute_container_unmount "/var/lib/dbus"
+                execute_container_unmount "/proc"
+                execute_container_unmount "/sys"
+                execute_container_unmount "/tmp"
+                execute_container_unmount "/run/user/1000"
+                execute_container_unmount "/run"
+                execute_container_unmount "/dev/shm"
+                execute_container_unmount "/dev/pts"
+                execute_container_unmount "/dev"
+            else
+                execute_container_permission
+                execute_container_unshare
+            fi
+            ;;
+        *)
+            echo "Usage: $(basename "$0") <create | execute> <directory>"
+            ;;
+    esac
+}
+
+operation="$1"
+container="$2"
+
+shift 2
+
+commandline="$@"
+
+main
