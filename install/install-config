@@ -1,0 +1,66 @@
+#!/bin/bash
+
+function config_check_file
+{
+    if [ -z "$config" ] || [ ! -f "$config" ]
+    then
+        echo "Error: Incorrect value for the config."
+        exit
+    fi
+
+    source "$config"
+}
+
+function config_check_device
+{
+    if [ -z "$device" ] || [ ! -b "$device" ]
+    then
+        echo "Error: Incorrect value for the device."
+        exit
+    fi
+}
+
+function config_check_hostname
+{
+    if [ -z "$hostname" ]
+    then
+        echo "Error: Incorrect value for the hostname."
+        exit
+    fi
+}
+
+function config_check_interface
+{
+    if [ -z "$interface" ] || [ ! -e "/sys/class/net/$interface" ]
+    then
+        echo "Error: Incorrect value for the interface."
+        exit
+    fi
+}
+
+function config_check_mountpoint
+{
+    if [ -z "$mountpoint" ] || [ ! -d "$mountpoint" ]
+    then
+        echo "Error: Incorrect value for the mountpoint."
+        exit
+    fi
+}
+
+function config_check_password
+{
+    if [ -z "$password" ]
+    then
+        echo "Error: Incorrect value for the password."
+        exit
+    fi
+}
+
+function config_check_username
+{
+    if [ -z "$username" ]
+    then
+        echo "Error: Incorrect value for the username."
+        exit
+    fi
+}

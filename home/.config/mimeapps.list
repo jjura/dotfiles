@@ -1,0 +1,12 @@
+[Default Applications]
+application/pdf=firefox-esr.desktop
+image/bmp=imv.desktop
+image/gif=imv.desktop
+image/jpeg=imv.desktop
+image/png=imv.desktop
+inode/directory=lf.desktop
+text/plain=neovim.desktop
+text/x-file=neovim.desktop
+text/x-shellscript=neovim.desktop
+x-scheme-handler/http=firefox-esr.desktop
+x-scheme-handler/https=firefox-esr.desktop

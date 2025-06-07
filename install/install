@@ -1,0 +1,67 @@
+#!/bin/bash
+
+source "install-config"
+source "install-device"
+source "install-system"
+source "install-user"
+source "install-utility"
+
+config="config"
+
+function main
+{
+    utility_check_permissions
+    utility_check_packages
+
+    config_check_file
+    config_check_device
+    config_check_hostname
+    config_check_interface
+    config_check_mountpoint
+    config_check_password
+    config_check_username
+
+    device_prepare_partitions
+    device_prepare_filesystems
+    device_prepare_mountpoint
+
+    system_prepare_base
+    system_prepare_mountpoint
+
+    utility_execute "root" system_prepare_repository
+    utility_execute "root" system_prepare_packages
+    utility_execute "root" system_prepare_bootloader
+    utility_execute "root" system_prepare_device
+    utility_execute "root" system_prepare_hostname
+    utility_execute "root" system_prepare_interface
+    utility_execute "root" system_prepare_module
+    utility_execute "root" system_prepare_root
+    utility_execute "root" system_prepare_sound
+    utility_execute "root" system_prepare_username
+    utility_execute "root" system_prepare_workaround
+
+    user_prepare_directory
+
+    utility_execute "root" user_prepare_ownership
+
+    utility_execute "$username" user_prepare_fonts
+    utility_execute "$username" user_prepare_icons
+    utility_execute "$username" user_prepare_mime
+    utility_execute "$username" user_prepare_schemas
+
+    utility_execute "$username" user_prepare_alsa
+    utility_execute "$username" user_prepare_ddcutil
+    utility_execute "$username" user_prepare_firefox
+    utility_execute "$username" user_prepare_foot
+    utility_execute "$username" user_prepare_imv
+    utility_execute "$username" user_prepare_lf
+    utility_execute "$username" user_prepare_libglib
+    utility_execute "$username" user_prepare_neovim
+    utility_execute "$username" user_prepare_sway
+    utility_execute "$username" user_prepare_swayidle
+    utility_execute "$username" user_prepare_tofi
+    utility_execute "$username" user_prepare_xdg
+    utility_execute "$username" user_prepare_xwayland
+}
+
+main

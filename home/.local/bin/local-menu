@@ -1,0 +1,120 @@
+#!/bin/bash
+
+function menu
+{
+    exec tofi --prompt "$1"
+}
+
+function application_name
+{
+    grep --recursive "Name" --no-filename "$HOME/.local/share/applications" \
+        | cut --delimiter "=" --fields 2                                    \
+        | sort                                                              \
+        | menu "Applications"
+}
+
+function application_file
+{
+    grep --recursive "Name=$1" --files-with-matches "$HOME/.local/share/applications"
+}
+
+function application_exec
+{
+    grep "Exec" "$1" | cut --delimiter "=" --fields 2
+}
+
+function menu_application
+{
+    application_name="$(application_name)"
+
+    if [ ! -z "$application_name" ]
+    then
+        application_file="$(application_file "$application_name")"
+        application_exec="$(application_exec "$application_file")"
+
+        exec $application_exec
+    fi
+}
+
+function menu_container
+{
+    container="$(ls "$HOME/Containers" | menu "Containers")"
+
+    if [ ! -z "$container" ]
+    then
+        container_user="$USER"
+
+        if [ ! -d "$HOME/Containers/$container/home/$container_user" ]
+        then
+            container_user="root"
+        fi
+
+        exec foot -- sudo                              \
+            "$HOME/.local/bin/local-container" execute \
+            "$HOME/Containers/$container" su - "$container_user"
+    fi
+}
+
+function menu_system
+{
+    system="$(echo -e "Lock\nLogout\nReload\nReboot\nShutdown\nSuspend" | menu "System")"
+
+    case "$system" in
+        "Lock")
+            sleep 1s && kill -s SIGUSR1 $(pidof swayidle)
+            ;;
+
+        "Logout")
+            exec swaynag                                     \
+                --type error                                 \
+                --message "Are you sure you want to logout?" \
+                --button-dismiss "Logout" "swaymsg exit"
+            ;;
+
+        "Reload")
+            exec swaymsg reload
+            ;;
+
+        "Reboot")
+            exec swaynag                                     \
+                --type error                                 \
+                --message "Are you sure you want to reboot?" \
+                --button-dismiss "Reboot" "systemctl reboot"
+            ;;
+
+        "Shutdown")
+            exec swaynag                                       \
+                --type error                                   \
+                --message "Are you sure you want to shutdown?" \
+                --button-dismiss "Shutdown" "systemctl poweroff"
+            ;;
+
+        "Suspend")
+            exec swaynag                                      \
+                --type error                                  \
+                --message "Are you sure you want to suspend?" \
+                --button-dismiss "Suspend" "systemctl suspend"
+            ;;
+    esac
+}
+
+function main
+{
+    main="$(echo -e "Applications\nContainers\nSystem" | menu "Menu")"
+
+    case "$main" in
+        "Applications")
+            menu_application
+            ;;
+
+        "Containers")
+            menu_container
+            ;;
+
+        "System")
+            menu_system
+            ;;
+    esac
+}
+
+main

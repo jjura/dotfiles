@@ -1,0 +1,251 @@
+#-------------------------------------------------------------------------------
+# Set: blue
+#-------------------------------------------------------------------------------
+set $color_blue_0 #225577
+set $color_blue_1 #5588aa
+set $color_blue_2 #eeeeee
+
+#-------------------------------------------------------------------------------
+# Set: gray
+#-------------------------------------------------------------------------------
+set $color_gray_0 #222222
+set $color_gray_1 #444444
+set $color_gray_2 #888888
+
+#-------------------------------------------------------------------------------
+# Set: red
+#-------------------------------------------------------------------------------
+set $color_red_0 #772222
+set $color_red_1 #aa5555
+set $color_red_2 #ffaaaa
+
+#-------------------------------------------------------------------------------
+# Set: mod
+#-------------------------------------------------------------------------------
+set $mod Mod4
+
+#-------------------------------------------------------------------------------
+# Bar:
+#-------------------------------------------------------------------------------
+bar {
+    #---------------------------------------------------------------------------
+    # Bar: colors
+    #---------------------------------------------------------------------------
+    colors {
+        #-----------------------------------------------------------------------
+        binding_mode       $color_red_1  $color_red_0  $color_red_2
+        urgent_workspace   $color_red_1  $color_red_0  $color_red_2
+        active_workspace   $color_gray_1 $color_gray_0 $color_gray_2
+        inactive_workspace $color_gray_1 $color_gray_0 $color_gray_2
+        focused_workspace  $color_blue_1 $color_blue_0 $color_blue_2
+
+        #-----------------------------------------------------------------------
+        separator          $color_gray_1
+        statusline         $color_gray_2
+    }
+
+    #---------------------------------------------------------------------------
+    # Bar: gaps
+    #---------------------------------------------------------------------------
+    gaps 2
+
+    #---------------------------------------------------------------------------
+    # Bar: position
+    #---------------------------------------------------------------------------
+    position top
+
+    #---------------------------------------------------------------------------
+    # Bar: separator
+    #---------------------------------------------------------------------------
+    separator_symbol |
+
+    #---------------------------------------------------------------------------
+    # Bar: status
+    #---------------------------------------------------------------------------
+    status_command exec local-status
+    status_edge_padding 6
+    status_padding 6
+
+    #---------------------------------------------------------------------------
+    # Bar: tray
+    #---------------------------------------------------------------------------
+    tray_output none
+
+    #---------------------------------------------------------------------------
+    # Bar: workspace
+    #---------------------------------------------------------------------------
+    workspace_min_width 24
+}
+
+#-------------------------------------------------------------------------------
+# Bind: floating
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+Space floating toggle
+
+#-------------------------------------------------------------------------------
+# Bind: focus
+#-------------------------------------------------------------------------------
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+#-------------------------------------------------------------------------------
+# Bind: focus
+#-------------------------------------------------------------------------------
+bindsym $mod+Space focus mode_toggle
+bindsym $mod+a focus parent
+
+#-------------------------------------------------------------------------------
+# Bind: fullscreen
+#-------------------------------------------------------------------------------
+bindsym $mod+f fullscreen toggle
+
+#-------------------------------------------------------------------------------
+# Bind: kill
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+q kill
+
+#-------------------------------------------------------------------------------
+# Bind: layout
+#-------------------------------------------------------------------------------
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+#-------------------------------------------------------------------------------
+# Bind: mode
+#-------------------------------------------------------------------------------
+bindsym $mod+r mode resize
+
+mode resize {
+    bindsym Escape mode default
+    bindsym Return mode default
+
+    bindsym h resize shrink width 10px
+    bindsym j resize shrink height 10px
+    bindsym k resize grow height 10px
+    bindsym l resize grow width 10px
+}
+
+#-------------------------------------------------------------------------------
+# Bind: move
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+#-------------------------------------------------------------------------------
+# Bind: move
+#-------------------------------------------------------------------------------
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 10
+
+#-------------------------------------------------------------------------------
+# Bind: split
+#-------------------------------------------------------------------------------
+bindsym $mod+b split horizontal
+bindsym $mod+v split vertical
+
+#-------------------------------------------------------------------------------
+# Bind: workspace
+#-------------------------------------------------------------------------------
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 10
+
+#-------------------------------------------------------------------------------
+# Bind: application
+#-------------------------------------------------------------------------------
+bindsym $mod+Return exec local-menu
+
+#-------------------------------------------------------------------------------
+# Bind: brightness
+#-------------------------------------------------------------------------------
+bindsym XF86MonBrightnessDown exec local-binding brightness down
+bindsym XF86MonBrightnessUp exec local-binding brightness up
+
+#-------------------------------------------------------------------------------
+# Bind: volume
+#-------------------------------------------------------------------------------
+bindsym XF86AudioLowerVolume exec local-binding volume down
+bindsym XF86AudioRaiseVolume exec local-binding volume up
+bindsym XF86AudioMute exec local-binding volume mute
+
+#-------------------------------------------------------------------------------
+# Client: border
+#-------------------------------------------------------------------------------
+default_border normal 1
+default_floating_border normal 1
+
+#-------------------------------------------------------------------------------
+# Client: colors
+#-------------------------------------------------------------------------------
+client.focused          $color_blue_1 $color_blue_0 $color_blue_2 $color_blue_1 $color_blue_1
+client.focused_inactive $color_gray_1 $color_gray_0 $color_gray_2 $color_gray_1 $color_gray_1
+client.unfocused        $color_gray_1 $color_gray_0 $color_gray_2 $color_gray_1 $color_gray_1
+client.urgent           $color_red_1  $color_red_0  $color_red_2  $color_red_1  $color_red_1
+
+#-------------------------------------------------------------------------------
+# Client: floating
+#-------------------------------------------------------------------------------
+floating_modifier $mod normal
+
+#-------------------------------------------------------------------------------
+# Client: font
+#-------------------------------------------------------------------------------
+font pango: Terminus 9
+
+#-------------------------------------------------------------------------------
+# Client: gaps
+#-------------------------------------------------------------------------------
+gaps inner 2
+
+#-------------------------------------------------------------------------------
+# Client: titlebar
+#-------------------------------------------------------------------------------
+titlebar_padding 6
+
+#-------------------------------------------------------------------------------
+# Exec:
+#-------------------------------------------------------------------------------
+exec swayidle
+
+#-------------------------------------------------------------------------------
+# Input:
+#-------------------------------------------------------------------------------
+input type:keyboard {
+    xkb_layout pl
+}
+
+#-------------------------------------------------------------------------------
+# Output:
+#-------------------------------------------------------------------------------
+output * {
+    background #000000 solid_color
+    mode 1920x1080@180.00Hz
+    subpixel rgb
+}
+
+#-------------------------------------------------------------------------------
+# Seat:
+#-------------------------------------------------------------------------------
+seat seat0 {
+    xcursor_theme Adwaita 24
+}

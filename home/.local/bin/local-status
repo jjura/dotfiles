@@ -1,0 +1,95 @@
+#!/bin/bash
+
+function cpu_usage_previous
+{
+    cat "/tmp/local-status"
+}
+
+function cpu_usage_current
+{
+    awk 'NR == 1 { total = $2 + $4 + $5 + $6 + $8; idle = $5 }
+         END { printf "%d %d", total, idle }' "/proc/stat" | tee "/tmp/local-status"
+}
+
+function status_cpu
+{
+    echo "$(cpu_usage_previous) $(cpu_usage_current)" | awk '
+        NR == 1 { total = $3 - $1; idle = $4 - $2 }
+        END { printf "%d%%\n", (total - idle) * 100 / total }'
+}
+
+function status_mem
+{
+    awk '/MemTotal/ { total = $2 }
+         /MemAvailable/ { available = $2 }
+         END { printf "%d MB", (total - available) / 1024 }' "/proc/meminfo"
+}
+
+function status_disk
+{
+    df --block-size="1M" --output="used" "/" | awk 'NR == 2 { printf "%d MB", $1 }'
+}
+
+function status_vol
+{
+    amixer get "Com Speaker" | grep --max-count 1 --only-matching "[0-9]*%"
+}
+
+function status_net_addr
+{
+    networkctl status | grep "Address:" | awk '{ print $2 }'
+}
+
+function status_net_dev
+{
+    networkctl status | grep "Address:" | awk '{ print $4 }'
+}
+
+function status_net
+{
+    echo "$(status_net_addr) <span foreground='#77ccaa'>[$(status_net_dev)]</span>"
+}
+
+function status_date
+{
+    date +"%d.%m.%Y"
+}
+
+function status_time
+{
+    date +"%H:%M"
+}
+
+function status_output
+{
+	cat <<- EOF
+		{
+			"full_text": "$2: <span foreground='$1'>$3</span>",
+			"markup": "pango",
+			"separator_block_width": 20,
+		},
+	EOF
+}
+
+function main
+{
+    echo '{ "version": 1 }'
+    echo '['
+
+    while true
+    do
+        echo "["
+        status_output "#dddddd" "CPU" "$(status_cpu)"
+        status_output "#dddddd" "MEM" "$(status_mem)"
+        status_output "#dddddd" "DISK" "$(status_disk)"
+        status_output "#dddddd" "VOL" "$(status_vol)"
+        status_output "#77aacc" "NET" "$(status_net)"
+        status_output "#dddddd" "DATE" "$(status_date)"
+        status_output "#dddddd" "TIME" "$(status_time)"
+        echo "],"
+
+        sleep 2s
+    done
+}
+
+main

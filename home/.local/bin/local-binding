@@ -1,0 +1,56 @@
+#!/bin/bash
+
+function binding_brightness
+{
+    brightness="$(ddcutil --brief --bus 10 getvcp 10 | cut --delimiter " " --fields 4)"
+
+    case "$1" in
+        "down")
+            brightness="$(expr "$brightness" - 10)"
+            ;;
+
+        "up")
+            brightness="$(expr "$brightness" + 10)"
+            ;;
+    esac
+
+    if [ "$brightness" -le 100 ] && [ "$brightness" -ge 0 ]
+    then
+        for bus in 10 11
+        do
+            ddcutil --bus "$bus" setvcp 10 "$brightness"
+        done
+    fi
+}
+
+function binding_volume
+{
+    case "$1" in
+        "down")
+            exec amixer sset "Com Speaker" 10%-
+            ;;
+
+        "up")
+            exec amixer sset "Com Speaker" 10%+
+            ;;
+
+        "mute")
+            exec amixer sset "Com Speaker" toggle
+            ;;
+    esac
+}
+
+function main
+{
+    case "$1" in
+        "brightness")
+            binding_brightness "$2"
+            ;;
+
+        "volume")
+            binding_volume "$2"
+            ;;
+    esac
+}
+
+main "$@"

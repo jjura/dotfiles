@@ -1,0 +1,45 @@
+#!/bin/bash
+
+function device_prepare_partitions
+{
+    parted "$device" --script                       \
+        mklabel gpt                                 \
+        mkpart "'boot partition'" fat32 1MiB  1GiB  \
+        mkpart "'root partition'" ext4  1GiB  11GiB \
+        mkpart "'var partition'"  ext4  11GiB 12GiB \
+        mkpart "'home partition'" ext4  12GiB 100%  \
+        set 1 esp on
+}
+
+function device_prepare_filesystems
+{
+    mkfs.fat  -F32 "${device}p1"
+    mkfs.ext4 -F   "${device}p2"
+    mkfs.ext4 -F   "${device}p3"
+    mkfs.ext4 -F   "${device}p4"
+}
+
+function device_prepare_mountpoint
+{
+    mount --types ext4 "${device}p2" "$mountpoint"
+
+    mkdir                  \
+        "$mountpoint/boot" \
+        "$mountpoint/home" \
+        "$mountpoint/var"
+
+    mount --types ext4 "${device}p4" "$mountpoint/home"
+    mount --types ext4 "${device}p3" "$mountpoint/var"
+    mount --types vfat "${device}p1" "$mountpoint/boot"
+}
+
+function device_prepare_uuid
+{
+    for uuid in "/dev/disk/by-uuid/"*
+    do
+        if [ "$(readlink --canonicalize "$uuid")" = "$1" ]
+        then
+            basename "$uuid"
+        fi
+    done
+}
