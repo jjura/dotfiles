@@ -1,0 +1,17 @@
+# Device:
+device="/dev/nvme0n1"
+
+# Hostname:
+hostname="debian"
+
+# Interface:
+interface="enp0s1"
+
+# Mountpoint:
+mountpoint="/mnt"
+
+# Password:
+password="password"
+
+# Username:
+username="username"
