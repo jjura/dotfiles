@@ -1,0 +1,61 @@
+#!/bin/bash
+
+function utility_check_permissions
+{
+    if [ "$(id --user)" -ne 0 ]
+    then
+        echo "Error: This script must be run as a superuser."
+        exit
+    fi
+}
+
+function utility_check_packages
+{
+    apt-get update
+    apt-get install --yes --no-install-recommends \
+        "ca-certificates"                         \
+        "debootstrap"                             \
+        "dosfstools"                              \
+        "e2fsprogs"                               \
+        "gcc"                                     \
+        "git"                                     \
+        "libc-dev"                                \
+        "libxft-dev"                              \
+        "libxinerama-dev"                         \
+        "make"                                    \
+        "parted"
+}
+
+function utility_mount
+{
+    if [ ! -d "$mountpoint/$2" ]
+    then
+        mkdir --parents "$mountpoint/$2"
+    fi
+
+    mount --types "$1" "$1" "$mountpoint/$2"
+}
+
+function utility_bind
+{
+    if [ ! -d "$mountpoint/$1" ]
+    then
+        mkdir --parents "$mountpoint/$1"
+    fi
+
+    mount --bind "$1" "$mountpoint/$1"
+}
+
+function utility_execute
+{
+    export -f device_prepare_uuid $2
+    export device username password hostname interface
+
+    chroot "$mountpoint" su "$1" --command "
+        export LANG=POSIX
+        export HOME=/home/$username
+        export PATH=/home/$username/.local/bin:\$PATH
+        export DEBIAN_FRONTEND=teletype
+        $2
+    "
+}
