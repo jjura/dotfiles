@@ -1,0 +1,190 @@
+#!/bin/bash
+
+function user_prepare_directory
+{
+    git clone "https://github.com/jjura/dotfiles" "$HOME/dotfiles" \
+        --branch "debian-stable-dwm"
+
+    for directory in   \
+        ".config"      \
+        ".local/bin"   \
+        ".local/opt"   \
+        ".local/share" \
+        ".local/state"
+    do
+        mkdir --parents "$mountpoint/home/$username/$directory"
+    done
+
+    cp --recursive "$HOME/dotfiles/home/." "$mountpoint/home/$username"
+}
+
+function user_prepare_suckless
+{
+    git clone "https://git.suckless.org/$1"
+
+    pushd "$1"
+        git apply --allow-empty "$HOME/dotfiles/patch/$1.patch"
+
+        make DESTDIR="$mountpoint/home/$username/.local/opt/$1" install
+    popd
+}
+
+function user_prepare_ownership
+{
+    chown --recursive "$username":"$username" "/home/$username"
+}
+
+function user_prepare_fonts
+{
+    local-package "/home/$username/fonts" \
+        "fonts-noto-color-emoji"          \
+        "fonts-terminus-otb"
+
+    cp --recursive                              \
+        "/home/$username/fonts/usr/share/fonts" \
+        "/home/$username/.local/share/fonts"
+
+    rm --recursive "/home/$username/fonts"
+}
+
+function user_prepare_icons
+{
+    local-package "/home/$username/icons" "adwaita-icon-theme"
+
+    cp --recursive                              \
+        "/home/$username/icons/usr/share/icons" \
+        "/home/$username/.local/share/icons"
+
+    rm --recursive "/home/$username/icons"
+}
+
+function user_prepare_mime
+{
+    local-package "/home/$username/mime" "shared-mime-info"
+
+    cp --recursive                            \
+        "/home/$username/mime/usr/share/mime" \
+        "/home/$username/.local/share/mime"
+
+    ln --symbolic                   \
+        "/home/$username/mime/mime" \
+        "/home/$username/mime/update-mime-database"
+
+    "/home/$username/mime/update-mime-database" \
+        "/home/$username/.local/share/mime"
+
+    rm --recursive "/home/$username/mime"
+}
+
+function user_prepare_schemas
+{
+    local-package "/home/$username/schemas" \
+        "gsettings-desktop-schemas"         \
+        "libgtk-3-common"
+
+    cp --recursive                                   \
+        "/home/$username/schemas/usr/share/glib-2.0" \
+        "/home/$username/.local/share/glib-2.0"
+
+    "/lib/x86_64-linux-gnu/glib-2.0/glib-compile-schemas" \
+        "/home/$username/.local/share/glib-2.0/schemas"
+
+    rm --recursive "/home/$username/schemas"
+}
+
+function user_prepare_dmenu
+{
+    local-package "/home/$username/.local/opt/dmenu" \
+        "libxft2"                                    \
+        "libxinerama1"
+
+    ln --symbolic                                \
+        "/home/$username/.local/opt/dmenu/dmenu" \
+        "/home/$username/.local/bin/dmenu_run"
+}
+
+function user_prepare_dwm
+{
+    local-package "/home/$username/.local/opt/dwm" \
+        "libxft2"                                  \
+        "libxinerama1"
+
+    ln --symbolic                            \
+        "/home/$username/.local/opt/dwm/dwm" \
+        "/home/$username/.local/bin/dwm"
+}
+
+function user_prepare_st
+{
+    local-package "/home/$username/.local/opt/st" "libxft2"
+
+    ln --symbolic                          \
+        "/home/$username/.local/opt/st/st" \
+        "/home/$username/.local/bin/st"
+}
+
+function user_prepare_alsa
+{
+    local-package "/home/$username/.local/opt/alsa-utils" "alsa-utils"
+
+    ln --symbolic                                          \
+        "/home/$username/.local/opt/alsa-utils/alsa-utils" \
+        "/home/$username/.local/bin/amixer"
+}
+
+function user_prepare_ddcutil
+{
+    local-package "/home/$username/.local/opt/ddcutil" "ddcutil"
+
+    ln --symbolic                                    \
+        "/home/$username/.local/opt/ddcutil/ddcutil" \
+        "/home/$username/.local/bin/ddcutil"
+}
+
+function user_prepare_firefox
+{
+    local-package "/home/$username/.local/opt/firefox-esr" \
+        "firefox-esr"                                      \
+        "libavcodec61"
+
+    ln --symbolic                                            \
+        "/home/$username/.local/opt/firefox-esr/firefox-esr" \
+        "/home/$username/.local/bin/firefox-esr"
+
+    firefox-esr -CreateProfile "$username /home/$username/.config/firefox-esr"
+}
+
+function user_prepare_neovim
+{
+    local-package "/home/$username/.local/opt/neovim" "neovim"
+
+    ln --symbolic                                  \
+        "/home/$username/.local/opt/neovim/neovim" \
+        "/home/$username/.local/bin/nvim"
+}
+
+function user_prepare_xdg
+{
+    local-package "/home/$username/.local/opt/xdg-utils" "xdg-utils"
+
+    ln --symbolic                                        \
+        "/home/$username/.local/opt/xdg-utils/xdg-utils" \
+        "/home/$username/.local/bin/xdg-mime"
+
+    ln --symbolic                                        \
+        "/home/$username/.local/opt/xdg-utils/xdg-utils" \
+        "/home/$username/.local/bin/xdg-open"
+}
+
+function user_prepare_xserver
+{
+    local-package "/home/$username/.local/opt/x11-xserver-utils" "x11-xserver-utils"
+
+    ln --symbolic                                                        \
+        "/home/$username/.local/opt/x11-xserver-utils/x11-xserver-utils" \
+        "/home/$username/.local/bin/xrandr"
+
+    ln --symbolic                                                        \
+        "/home/$username/.local/opt/x11-xserver-utils/x11-xserver-utils" \
+        "/home/$username/.local/bin/xsetroot"
+}
